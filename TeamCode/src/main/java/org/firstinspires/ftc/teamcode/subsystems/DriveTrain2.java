@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import dev.nextftc.core.commands.Command;
 import dev.nextftc.core.commands.delays.Delay;
+import dev.nextftc.core.commands.groups.ParallelGroup;
 import dev.nextftc.core.commands.groups.SequentialGroup;
 import dev.nextftc.core.commands.utility.LambdaCommand;
 import dev.nextftc.core.subsystems.Subsystem;
@@ -55,7 +56,7 @@ public class DriveTrain2 implements Subsystem {
 
     public boolean firsttime = true;
 
-    public static double servoOffset = 0.02;
+    public static double servoOffset = 0.0025;
     public static double wrapServoOffset = 0.0;
     public static double turretServoThreshold = 0.0012;
 
@@ -85,7 +86,7 @@ public class DriveTrain2 implements Subsystem {
     public static double headingLockDeadbandDeg = 2.0;
 
     /** Proportional gain, power per degree of error. */
-    public static double headingKp = 0.01;
+    public static double headingKp = 0.001;
 
     /** Static feedforward: a constant push in the error direction, to break
      *  stiction that the P term alone cannot overcome close to the target. */
@@ -113,9 +114,9 @@ public class DriveTrain2 implements Subsystem {
     public static double cmdRateFilterAlpha = 0.3;
     public static double cmdRateSpikeLimit = 400.0;
 
-    public static double maxSlewNormalDegPerSec = 400;
+    public static double maxSlewNormalDegPerSec = 300;
 
-    public static double maxSlewWrapDegPerSec = 540.0;
+    public static double maxSlewWrapDegPerSec = 300;
 
     public static boolean turretParked = false;
 
@@ -684,8 +685,19 @@ public class DriveTrain2 implements Subsystem {
             if (lastServoPos < 0
                     || offsetChanged
                     || Math.abs(servoPositionSignal - lastServoPos) > turretServoThreshold) {
-                turret1.setPosition(servoPositionSignal + activeOffset);
-                turret2.setPosition(servoPositionSignal - activeOffset);
+                double finalServoPositionSignal = servoPositionSignal;
+                Command turretServo1Update = new LambdaCommand()
+                        .setStart(() -> {
+                            turret1.setPosition(finalServoPositionSignal + activeOffset);
+                        });
+                Command turretServo2Update = new LambdaCommand()
+                        .setStart(() -> {
+                            turret2.setPosition(finalServoPositionSignal - activeOffset);
+                        });
+                ParallelGroup setTurret  = new ParallelGroup(turretServo1Update, turretServo2Update);
+                setTurret.schedule();
+                //turret1.setPosition(servoPositionSignal + activeOffset);
+                //turret2.setPosition(servoPositionSignal - activeOffset);
                 lastServoPos = servoPositionSignal;
                 lastAppliedOffset = activeOffset;
             }
