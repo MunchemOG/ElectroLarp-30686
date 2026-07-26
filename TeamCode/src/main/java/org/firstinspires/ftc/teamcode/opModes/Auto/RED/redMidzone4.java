@@ -4,7 +4,6 @@ import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopper
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.openStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.servoOffset;
 import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
-import static org.firstinspires.ftc.teamcode.subsystems.LaunchDetectorCRI.isOverlappingLaunchZone;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.calculateShotVectorandUpdateHeading;
 
 import com.bylazar.configurables.annotations.Configurable;
@@ -41,11 +40,11 @@ import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
 
-@Autonomous(name = "Red ICE V27")
-@Configurable
-public class redMidzone3 extends NextFTCOpMode {
 
-    public redMidzone3() {
+@Autonomous(name = "Red Meh V1")// No spike 3
+@Configurable
+public class redMidzone4 extends NextFTCOpMode {
+    public redMidzone4() {
         addComponents(
                 BulkReadComponent.INSTANCE,
                 BindingsComponent.INSTANCE,
@@ -439,8 +438,7 @@ public class redMidzone3 extends NextFTCOpMode {
         Pose FIRST_SPIKE = new Pose(177.1, 82.6, Math.toRadians(0));
         Pose FIRST_SPIKE_CONTROL = new Pose(92, 78.7);
         Pose FIRST_SHOOT = new Pose(113.5, 103,Math.toRadians(-25));
-        Pose SECOND_SPIKE = new Pose(181.5, 59, Math.toRadians(0));
-        Pose SPIKE_2_CONTROL = new Pose(151.6, 50);
+        Pose SECOND_SPIKE = new Pose(180.5,82.6 , Math.toRadians(0));
         Pose TUNNEL_SHOOT = new Pose(111.7, 95);//x = 108.7
         Pose SWEEP_1 = new Pose(180.5, 84.2, Math.toRadians(-20));
         Pose SWEEP_2 = new Pose(178, 81.7, Math.toRadians(-60));
@@ -466,8 +464,8 @@ public class redMidzone3 extends NextFTCOpMode {
                     .build();
 
             intakeSpike2 = follower.pathBuilder()
-                    .addPath(new BezierCurve(FIRST_SHOOT, SPIKE_2_CONTROL, SECOND_SPIKE))
-                    .setLinearHeadingInterpolation(FIRST_SHOOT.getHeading(), SECOND_SPIKE.getHeading())
+                    .addPath(new BezierLine(FIRST_SHOOT, SECOND_SPIKE))
+                    .setConstantHeadingInterpolation(SECOND_SPIKE.getHeading())
                     .build();
 
             tunnelShoot = follower.pathBuilder()
@@ -531,5 +529,6 @@ public class redMidzone3 extends NextFTCOpMode {
                     .setReversed()
                     .build();
         }
+
     }
 }

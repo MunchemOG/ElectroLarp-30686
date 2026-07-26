@@ -41,8 +41,8 @@ import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
 
-@Disabled
-@Autonomous(name = "Blue ICE V16")
+
+@Autonomous(name = "Blue ICE V27")
 @Configurable
 public class blueMidzone3 extends NextFTCOpMode {
 

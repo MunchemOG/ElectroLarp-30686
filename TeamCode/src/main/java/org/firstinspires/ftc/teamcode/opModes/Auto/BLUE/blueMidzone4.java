@@ -1,10 +1,9 @@
-package org.firstinspires.ftc.teamcode.opModes.Auto.RED;
+package org.firstinspires.ftc.teamcode.opModes.Auto.BLUE;
 
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.openStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.servoOffset;
 import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
-import static org.firstinspires.ftc.teamcode.subsystems.LaunchDetectorCRI.isOverlappingLaunchZone;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.calculateShotVectorandUpdateHeading;
 
 import com.bylazar.configurables.annotations.Configurable;
@@ -41,11 +40,12 @@ import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
 
-@Autonomous(name = "Red ICE V27")
-@Configurable
-public class redMidzone3 extends NextFTCOpMode {
 
-    public redMidzone3() {
+@Autonomous(name = "Blue Meh V11") // No spike 3
+@Configurable
+public class blueMidzone4 extends NextFTCOpMode {
+
+    public blueMidzone4() {
         addComponents(
                 BulkReadComponent.INSTANCE,
                 BindingsComponent.INSTANCE,
@@ -58,17 +58,19 @@ public class redMidzone3 extends NextFTCOpMode {
     private Timer opmodeTimer;
     private Paths paths;
 
-    public static double startX = 128.554;
+    // Raw blue-alliance start pose, copied directly from FarAutoPathsMTI's START_POSE
+    // ColoredDecodePose value (blue is the unmirrored base pose there).
+    public static double startX = 63.446;
     public static double startY = 180.296;
 
-    public Pose start = new Pose(startX, startY, Math.toRadians(-90));
+    public Pose start = new Pose(startX, startY, Math.toRadians(270));
 
     // --- Turret tracking ---
     private ServoEx servoStopper;
     private ServoEx hoodServo;
 
     double goalY = 188;
-    double goalX = 190;
+    double goalX = 2;
 
     private static final double MIN_ANGLE = -224.75;
     private static final double MAX_ANGLE = 224.75;
@@ -217,7 +219,7 @@ public class redMidzone3 extends NextFTCOpMode {
         isOverridden = true;
         preload = true;
 
-        overriddenTurretAngle = getClosestValidTurretAngle(50);
+        overriddenTurretAngle = getClosestValidTurretAngle(-50);
         double hoodAngle = 0.2;
 
         openStopper.schedule();
@@ -364,7 +366,7 @@ public class redMidzone3 extends NextFTCOpMode {
         if (preload == true) {
             shooter(6000);
             double hoodAngle = results[1];
-            turretOffset = -10;
+            turretOffset = 10;
             hoodServo.setPosition(hoodAngle+0.25);
 
 
@@ -374,7 +376,7 @@ public class redMidzone3 extends NextFTCOpMode {
             shooter((float) flywheelSpeed);
             double hoodAngle = results[1];
             hoodServo.setPosition(hoodAngle);
-            turretOffset = -16;
+            turretOffset = 16;
 
         }
         double hoodAngle = results[1];
@@ -433,21 +435,24 @@ public class redMidzone3 extends NextFTCOpMode {
 
         public PathChain park;
 
+        // Raw blue-alliance poses, copied directly from FarAutoPathsMTI's ColoredDecodePose
+        // (blue is unmirrored so lowk wont goon).
+
+
         //====Change these only para paths egg=================
-        Pose preloads = new Pose(112.81, 156.859, Math.toRadians(-90));
-        Pose PRELOAD_CONTROL = new Pose(130.279, 175.872);
-        Pose FIRST_SPIKE = new Pose(177.1, 82.6, Math.toRadians(0));
-        Pose FIRST_SPIKE_CONTROL = new Pose(92, 78.7);
-        Pose FIRST_SHOOT = new Pose(113.5, 103,Math.toRadians(-25));
-        Pose SECOND_SPIKE = new Pose(181.5, 59, Math.toRadians(0));
-        Pose SPIKE_2_CONTROL = new Pose(151.6, 50);
-        Pose TUNNEL_SHOOT = new Pose(111.7, 95);//x = 108.7
-        Pose SWEEP_1 = new Pose(180.5, 84.2, Math.toRadians(-20));
-        Pose SWEEP_2 = new Pose(178, 81.7, Math.toRadians(-60));
-        Pose SWEEP_2_CONTROL = new Pose(173.3, 82.5);
-        Pose SWEEP_3 = new Pose(180.5, 65.2, Math.toRadians(-60));
-        Pose SWEEP_SHOOT = new Pose(108.2, 93.1);
-        Pose PARK_POSE = new Pose(111, 87);
+        Pose preloads = new Pose(79.19, 156.859, Math.toRadians(270));
+        Pose PRELOAD_CONTROL = new Pose(61.721, 175.872);
+        Pose FIRST_SPIKE = new Pose(14.9, 82.6, Math.toRadians(180));
+        Pose FIRST_SPIKE_CONTROL = new Pose(100, 78.7);
+        Pose FIRST_SHOOT = new Pose(78.5, 103,Math.toRadians(205));
+        Pose SECOND_SPIKE = new Pose(11.5,82.6 , Math.toRadians(180));
+        Pose TUNNEL_SHOOT = new Pose(80.3, 95);//x = 83.3
+        Pose SWEEP_1 = new Pose(11.5, 84.2, Math.toRadians(200));
+        Pose SWEEP_2 = new Pose(14, 81.7, Math.toRadians(240));
+        Pose SWEEP_2_CONTROL = new Pose(18.7, 82.5);
+        Pose SWEEP_3 = new Pose(11.5, 65.2, Math.toRadians(240));
+        Pose SWEEP_SHOOT = new Pose(83.8, 93.1);
+        Pose PARK_POSE = new Pose(81, 87);
 
         public Paths(Follower follower) {
             shootPreloads = follower.pathBuilder()
@@ -466,8 +471,8 @@ public class redMidzone3 extends NextFTCOpMode {
                     .build();
 
             intakeSpike2 = follower.pathBuilder()
-                    .addPath(new BezierCurve(FIRST_SHOOT, SPIKE_2_CONTROL, SECOND_SPIKE))
-                    .setLinearHeadingInterpolation(FIRST_SHOOT.getHeading(), SECOND_SPIKE.getHeading())
+                    .addPath(new BezierLine(FIRST_SHOOT, SECOND_SPIKE))
+                    .setConstantHeadingInterpolation(SECOND_SPIKE.getHeading())
                     .build();
 
             tunnelShoot = follower.pathBuilder()
@@ -477,6 +482,7 @@ public class redMidzone3 extends NextFTCOpMode {
                     .addTemporalCallback(150, intakeMotorOff)
                     .build();
 
+            //js goon cycle sweep
             intakeSweepHP1 = buildIntakeSweepTunnel(follower);
             hpToShoot1 = buildTunnelToShoot(follower);
             sweepAndShoot1 = buildSweepAndShoot(follower);
@@ -531,5 +537,6 @@ public class redMidzone3 extends NextFTCOpMode {
                     .setReversed()
                     .build();
         }
+
     }
 }
