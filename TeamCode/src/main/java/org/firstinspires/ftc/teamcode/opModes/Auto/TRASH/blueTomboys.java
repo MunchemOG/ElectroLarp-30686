@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opModes.Auto.BLUE;
+package org.firstinspires.ftc.teamcode.opModes.Auto.TRASH;
 
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.openStopperPos;
@@ -40,11 +40,11 @@ import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
 @Disabled
-@Autonomous(name = "Blue Mid V2")
+@Autonomous(name = "Blue Mid V1")
 @Configurable
-public class blueMidzoneBust extends NextFTCOpMode {
+public class blueTomboys extends NextFTCOpMode {
 
-    public blueMidzoneBust() {
+    public blueTomboys() {
         addComponents(
                 BulkReadComponent.INSTANCE,
                 BindingsComponent.INSTANCE,
@@ -446,8 +446,6 @@ public class blueMidzoneBust extends NextFTCOpMode {
         Pose SWEEP_3 = new Pose(13.5, 92.2, Math.toRadians(170));
         Pose SWEEP_SHOOT = new Pose(83.8, 93.1);
         Pose PARK_POSE = new Pose(81, 87);
-
-        
 
         public Paths(Follower follower) {
             shootPreloads = follower.pathBuilder()

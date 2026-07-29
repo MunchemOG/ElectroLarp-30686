@@ -14,7 +14,7 @@ import dev.nextftc.ftc.Gamepads;
 import dev.nextftc.ftc.NextFTCOpMode;
 import dev.nextftc.ftc.components.BulkReadComponent;
 
-@com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "TeleOpRedCRI")
+@com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "TeleOpRed")
 public class TeleOpRed2 extends NextFTCOpMode {
     //public MotorEx intakeMotor;
     //public MotorEx transfer;

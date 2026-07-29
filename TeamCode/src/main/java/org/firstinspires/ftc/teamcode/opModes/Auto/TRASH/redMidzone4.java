@@ -1,10 +1,9 @@
-package org.firstinspires.ftc.teamcode.opModes.Auto.RED;
+package org.firstinspires.ftc.teamcode.opModes.Auto.TRASH;
 
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.openStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.servoOffset;
 import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
-import static org.firstinspires.ftc.teamcode.subsystems.LaunchDetectorCRI.isOverlappingLaunchZone;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.calculateShotVectorandUpdateHeading;
 
 import com.bylazar.configurables.annotations.Configurable;
@@ -17,6 +16,7 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 
@@ -40,11 +40,12 @@ import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
 
-@Autonomous(name = "Red Mid V16")
-@Configurable
-public class redMidzone2 extends NextFTCOpMode {
 
-    public redMidzone2() {
+@Disabled
+@Autonomous(name = "Red Meh V1")// No spike 3
+@Configurable
+public class redMidzone4 extends NextFTCOpMode {
+    public redMidzone4() {
         addComponents(
                 BulkReadComponent.INSTANCE,
                 BindingsComponent.INSTANCE,
@@ -100,8 +101,8 @@ public class redMidzone2 extends NextFTCOpMode {
             });
     private Command farTransfer = new LambdaCommand()
             .setStart(() -> {
-                intakeMotor.setPower(0.9);
-                transfer.setPower(0.9);
+                intakeMotor.setPower(0.8);
+                transfer.setPower(0.8);
             });
 
     private Command intakeMotorOff = new LambdaCommand()
@@ -260,65 +261,63 @@ public class redMidzone2 extends NextFTCOpMode {
                 .setIsDone(() -> true);
     }
     private SequentialGroup shoot = new SequentialGroup(
-            new Delay(0.3),
             openStopper,
             farTransfer,
             new Delay(0.4),
-            intakeMotorOff,
             closeStopper);
 
 
 
     public Command Auto() {
         return new SequentialGroup(
+                closeStopper,
                 setSOTMShooting,
+                new Delay(1.9),
                 new FollowPath(paths.shootPreloads, true, 1.0),
-                new Delay(0.6),
-
+                openStopper,
                 intakeMotorOn,
-                // --- Spike 1 cycle ---
-                new Delay(0.3),
                 disablePreload,
-
-                new FollowPath(paths.intakeSpike1, false, 1.0),
-
-                new Delay(0.3),
-                new FollowPath(paths.shootSpike1, true, 1.0),
-                new Delay(0.05),
-                // --- Sweep 1 cycle ---
                 setBrakeShooting,
-                intakeMotorOn,
-                new FollowPath(paths.goingDownToSweep,false,1.0),
-                new FollowPath(paths.goingUp,false,1.0),
+                new Delay(0.4),
+                closeStopper,
+                // --- Spike 1 cycle ---
+                new FollowPath(paths.intakeSpike1, true, 1.0),
+                new Delay(0.3),
                 intakeMotorOff,
-                new FollowPath(paths.sweep_shoot),
-                // --- Sweep 2 cycle ---
-                intakeMotorOn,
-                new FollowPath(paths.goingDownToSweep,false,1.0),
-                new FollowPath(paths.goingUp,false,1.0),
+                new FollowPath(paths.shootSpike1, true, 1.0),
+                shoot,
+                // --- Spike 2 cycle ---
+                new FollowPath(paths.intakeSpike2, true, 1.0), //spike 3 so ice ice baby
+                new Delay(0.3),
                 intakeMotorOff,
-                new FollowPath(paths.sweep_shoot),
-                // --- Sweep 3 cycle ---
-                intakeMotorOn,
-                new FollowPath(paths.goingDownToSweep,false,1.0),
-                new FollowPath(paths.goingUp,false,1.0),
-                intakeMotorOff,
-                new FollowPath(paths.sweep_shoot),
-                // --- Sweep 4 cycle ---
-                intakeMotorOn,
-                new FollowPath(paths.goingDownToSweep,false,1.0),
-                new FollowPath(paths.goingUp,false,1.0),
-                intakeMotorOff,
-                new FollowPath(paths.sweep_shoot),
-
-                // --- Sweep 5 cycle ---
-                intakeMotorOn,
-                new FollowPath(paths.goingDownToSweep,false,1.0),
-                new FollowPath(paths.goingUp,false,1.0),
-                intakeMotorOff,
-                setSOTMShooting,
-                new FollowPath(paths.sweep_shootPark)
-
+                new FollowPath(paths.tunnelShoot, true, 0.9),
+                shoot,
+                // --- Sweep cycle 1 ---
+                new FollowPath(paths.intakeSweepHP1, true, 1.0),
+                new Delay(0.3),
+                new FollowPath(paths.sweepAndShoot1, true, 0.9),
+                shoot,
+                // --- Sweep cycle 2 ---
+                new FollowPath(paths.intakeSweepHP2, true, 1.0),
+                new Delay(0.3),
+                new FollowPath(paths.sweepAndShoot2, true, 0.9),
+                shoot,
+                // --- Sweep cycle 3 ---
+                new FollowPath(paths.intakeSweepHP3, true, 1.0),
+                new Delay(0.3),
+                new FollowPath(paths.sweepAndShoot3, true, 0.9),
+                shoot,
+//                // --- Sweep cycle 4 ---
+//                new FollowPath(paths.intakeSweepHP4, true, 1.0),
+//                new Delay(0.3),
+//                new FollowPath(paths.sweepAndShoot4, true, 1.0),
+//                shoot,
+////                // --- Sweep cycle 5 ---
+//                new FollowPath(paths.intakeSweepHP5, true, 1.0),
+//                new Delay(0.3),
+//                new FollowPath(paths.sweepAndShoot5, true, 1.0),
+                new FollowPath(paths.park, true, 1.0),
+                setSOTMShooting
         );
     }
 
@@ -365,8 +364,8 @@ public class redMidzone2 extends NextFTCOpMode {
         if (preload == true) {
             shooter(6000);
             double hoodAngle = results[1];
-            turretOffset=1;
-            hoodServo.setPosition(hoodAngle+0.125);
+            turretOffset = -10;
+            hoodServo.setPosition(hoodAngle+0.25);
 
 
         }
@@ -375,7 +374,7 @@ public class redMidzone2 extends NextFTCOpMode {
             shooter((float) flywheelSpeed);
             double hoodAngle = results[1];
             hoodServo.setPosition(hoodAngle);
-            turretOffset=-5;
+            turretOffset = -16;
 
         }
         double hoodAngle = results[1];
@@ -394,13 +393,6 @@ public class redMidzone2 extends NextFTCOpMode {
         currentTurretPos = targetTurretAngle;
 
         Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.2), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.2), follower.getHeading());
-        if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 39&&!preload) {
-            intakeMotor.setPower(1);
-            transfer.setPower(1);
-            openStopper.schedule();
-        } else if(!preload) {
-            closeStopper.schedule();
-        }
         Storage.currentPose = follower.getPose();
 
         Storage.setPose = true;
@@ -416,60 +408,128 @@ public class redMidzone2 extends NextFTCOpMode {
         public PathChain shootPreloads;
         public PathChain intakeSpike1;
         public PathChain shootSpike1;
-        public PathChain goingDownToSweep;
-        public PathChain goingUp;
+        public PathChain intakeSpike2;
+        public PathChain tunnelShoot;
 
-        public PathChain sweep_shoot;
+        public PathChain intakeSweepHP1;
+        public PathChain hpToShoot1;
+        public PathChain sweepAndShoot1;
 
-        public PathChain sweep_shootPark;
+        public PathChain intakeSweepHP2;
+        public PathChain hpToShoot2;
+        public PathChain sweepAndShoot2;
+
+        public PathChain intakeSweepHP3;
+        public PathChain hpToShoot3;
+        public PathChain sweepAndShoot3;
+
+        public PathChain intakeSweepHP4;
+        public PathChain hpToShoot4;
+        public PathChain sweepAndShoot4;
+
+        public PathChain intakeSweepHP5;
+        public PathChain hpToShoot5;
+        public PathChain sweepAndShoot5;
+
+        public PathChain park;
 
         //====Change these only para paths egg=================
-        Pose preloads = new Pose(126.243, 115.087, Math.toRadians(0));
-        Pose spike1ControlPose = new Pose(143.602, 80.762);
-        Pose spike1 = new Pose(173.256, 83, Math.toRadians(0));
-        Pose shootPosDefault = new Pose(126.266, 114.778, Math.toRadians(-5));
-        Pose sweepDown = new Pose(180, 60, Math.toRadians(47));
-
-        Pose sweepUp = new Pose(180, 90, Math.toRadians(47));
-
-        Pose shootPosDefault1 = new Pose(126.266, 114.778, Math.toRadians(-17));
-
-        Pose shootPark = new Pose(115.995, 130.955, Math.toRadians(-30));
-
+        Pose preloads = new Pose(112.81, 156.859, Math.toRadians(-90));
+        Pose PRELOAD_CONTROL = new Pose(130.279, 175.872);
+        Pose FIRST_SPIKE = new Pose(177.1, 82.6, Math.toRadians(0));
+        Pose FIRST_SPIKE_CONTROL = new Pose(92, 78.7);
+        Pose FIRST_SHOOT = new Pose(113.5, 103,Math.toRadians(-25));
+        Pose SECOND_SPIKE = new Pose(180.5,82.6 , Math.toRadians(0));
+        Pose TUNNEL_SHOOT = new Pose(111.7, 95);//x = 108.7
+        Pose SWEEP_1 = new Pose(180.5, 84.2, Math.toRadians(-20));
+        Pose SWEEP_2 = new Pose(178, 81.7, Math.toRadians(-60));
+        Pose SWEEP_2_CONTROL = new Pose(173.3, 82.5);
+        Pose SWEEP_3 = new Pose(180.5, 65.2, Math.toRadians(-60));
+        Pose SWEEP_SHOOT = new Pose(108.2, 93.1);
+        Pose PARK_POSE = new Pose(111, 87);
 
         public Paths(Follower follower) {
             shootPreloads = follower.pathBuilder()
-                    .addPath(new BezierLine(start, preloads))
-                    .setLinearHeadingInterpolation(start.getHeading(), preloads.getHeading())
+                    .addPath(new BezierCurve(start, PRELOAD_CONTROL, preloads))
+                    .setConstantHeadingInterpolation(preloads.getHeading())
                     .build();
 
             intakeSpike1 = follower.pathBuilder()
-                    .addPath(new BezierCurve(preloads, spike1ControlPose, spike1))
-                    .setConstantHeadingInterpolation(spike1.getHeading())
+                    .addPath(new BezierCurve(start, FIRST_SPIKE_CONTROL, FIRST_SPIKE))
+                    .setLinearHeadingInterpolation(preloads.getHeading(), FIRST_SPIKE.getHeading())
                     .build();
-
 
             shootSpike1 = follower.pathBuilder()
-                    .addPath(new BezierLine(spike1, shootPosDefault))
-                    .setLinearHeadingInterpolation(spike1.getHeading(), shootPosDefault.getHeading())
+                    .addPath(new BezierLine(FIRST_SPIKE, FIRST_SHOOT))
+                    .setLinearHeadingInterpolation(FIRST_SPIKE.getHeading(), FIRST_SHOOT.getHeading())
                     .build();
-            goingDownToSweep = follower.pathBuilder()
-                    .addPath(new BezierLine(shootPosDefault, sweepDown))
-                    .setLinearHeadingInterpolation(shootPosDefault.getHeading(), sweepDown.getHeading())
-                    .build();
-            goingUp = follower.pathBuilder()
-                    .addPath(new BezierLine(sweepDown, sweepUp))
-                    .setConstantHeadingInterpolation(sweepUp.getHeading())
 
+            intakeSpike2 = follower.pathBuilder()
+                    .addPath(new BezierLine(FIRST_SHOOT, SECOND_SPIKE))
+                    .setConstantHeadingInterpolation(SECOND_SPIKE.getHeading())
                     .build();
-            sweep_shoot = follower.pathBuilder()
-                    .addPath(new BezierLine(sweepUp, shootPosDefault1))
-                    .setLinearHeadingInterpolation(sweepUp.getHeading(), shootPosDefault1.getHeading())
+
+            tunnelShoot = follower.pathBuilder()
+                    .addPath(new BezierLine(SECOND_SPIKE, TUNNEL_SHOOT))
+                    .setTangentHeadingInterpolation()
+                    .setReversed()
+                    .addTemporalCallback(150, intakeMotorOff)
                     .build();
-            sweep_shootPark = follower.pathBuilder()
-                    .addPath(new BezierLine(sweepUp, shootPark))
-                    .setLinearHeadingInterpolation(sweepUp.getHeading(), shootPark.getHeading())
+
+            intakeSweepHP1 = buildIntakeSweepTunnel(follower);
+            hpToShoot1 = buildTunnelToShoot(follower);
+            sweepAndShoot1 = buildSweepAndShoot(follower);
+
+            intakeSweepHP2 = buildIntakeSweepTunnel(follower);
+            hpToShoot2 = buildTunnelToShoot(follower);
+            sweepAndShoot2 = buildSweepAndShoot(follower);
+
+            intakeSweepHP3 = buildIntakeSweepTunnel(follower);
+            hpToShoot3 = buildTunnelToShoot(follower);
+            sweepAndShoot3 = buildSweepAndShoot(follower);
+
+            intakeSweepHP4 = buildIntakeSweepTunnel(follower);
+            hpToShoot4 = buildTunnelToShoot(follower);
+            sweepAndShoot4 = buildSweepAndShoot(follower);
+
+            intakeSweepHP5 = buildIntakeSweepTunnel(follower);
+            hpToShoot5 = buildTunnelToShoot(follower);
+            sweepAndShoot5 = buildSweepAndShoot(follower);
+
+            park = follower.pathBuilder()
+                    .addPath(new BezierLine(SWEEP_SHOOT, PARK_POSE))
+                    .setTangentHeadingInterpolation()
                     .build();
         }
+
+        private PathChain buildIntakeSweepTunnel(Follower follower) {
+            return follower.pathBuilder()
+                    .addPath(new BezierLine(TUNNEL_SHOOT, SWEEP_1))
+                    .setConstantHeadingInterpolation(SWEEP_1.getHeading())
+                    .build();
+        }
+
+        private PathChain buildTunnelToShoot(Follower follower) {
+            return follower.pathBuilder()
+                    .addPath(new BezierLine(SWEEP_1, TUNNEL_SHOOT))
+                    .setConstantHeadingInterpolation(SWEEP_1.getHeading())
+                    .addTemporalCallback(150, intakeMotorOff)
+                    .build();
+        }
+
+        private PathChain buildSweepAndShoot(Follower follower) {
+            return follower.pathBuilder()
+                    .addPath(new BezierCurve(SWEEP_1, SWEEP_2_CONTROL, SWEEP_2))
+                    .setLinearHeadingInterpolation(SWEEP_1.getHeading(), SWEEP_2.getHeading())
+                    .addPath(new BezierLine(SWEEP_2, SWEEP_3))
+                    .setConstantHeadingInterpolation(SWEEP_2.getHeading())
+                    .addTemporalCallback(500, intakeMotorOff)
+                    .addPath(new BezierLine(SWEEP_3, SWEEP_SHOOT))
+                    .setBrakingStrength(0.3)
+                    .setTValueConstraint(0.8)
+                    .setReversed()
+                    .build();
+        }
+
     }
 }

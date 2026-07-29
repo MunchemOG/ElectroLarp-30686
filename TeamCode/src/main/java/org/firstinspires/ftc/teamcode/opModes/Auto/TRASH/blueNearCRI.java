@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.opModes.Auto.RED;
+package org.firstinspires.ftc.teamcode.opModes.Auto.TRASH;
 
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.openStopperPos;
@@ -22,6 +22,7 @@ import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude;
 import org.firstinspires.ftc.teamcode.subsystems.Storage;
 
 import java.util.List;
@@ -39,12 +40,13 @@ import dev.nextftc.ftc.components.BulkReadComponent;
 import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
-
-@Autonomous(name = "Red Close 24 Near V1")
+@Disabled
 @Configurable
-public class redNear extends NextFTCOpMode {
+@Autonomous(name = "Blue CRI Near V28")
 
-    public redNear() {
+public class blueNearCRI extends NextFTCOpMode {
+
+    public blueNearCRI() {
         addComponents(
                 BulkReadComponent.INSTANCE,
                 BindingsComponent.INSTANCE,
@@ -57,7 +59,8 @@ public class redNear extends NextFTCOpMode {
     private Timer opmodeTimer;
     private Paths paths;
 
-    public static double startX = 112;
+
+    public static double startX = 32;
     public static double startY = 134;
 
     public Pose start = new Pose(startX, startY, Math.toRadians(-90));
@@ -66,10 +69,9 @@ public class redNear extends NextFTCOpMode {
     private ServoEx servoStopper;
     private ServoEx hoodServo;
 
-    // NOT mirrored — out of scope for this pass (only the path poses were mirrored).
-    // If red's physical goal is the mirrored location, this would be goalX = 143.
+
     double goalY = 140.5;
-    double goalX = 140;
+    double goalX = 4;
 
     private static final double MIN_ANGLE = -224.75;
     private static final double MAX_ANGLE = 224.75;
@@ -87,13 +89,24 @@ public class redNear extends NextFTCOpMode {
     private ServoImplEx turret1;
     private ServoImplEx turret2;
 
-    public static double turretOffset = 4.5;
-    public static double turretOffset2 = 2;
+    public static double turretOffset = 0;
+    public static double turretOffset2 = -8;
     public static double turretOffsetStep = -5;
 
-    // Inches from the Pinpoint/Pedro robot pose origin to the turret pivot.
+
     public static double turretForwardOffset = -0.52588;
     public static double turretStrafeOffset = 0;
+
+    public Command setBrakeShooting = new LambdaCommand()
+            .setStart(() -> {
+                ShooterCalcAccelClaude.revAmpedMode=2; // close
+            }).setIsDone(() -> true);
+
+    public Command setSOTMShooting = new LambdaCommand()
+            .setStart(() -> {
+                ShooterCalcAccelClaude.revAmpedMode=1; // close
+            }).setIsDone(() -> true);
+
 
     private Command intakeMotorOn = new LambdaCommand()
             .setStart(() -> {
@@ -153,7 +166,7 @@ public class redNear extends NextFTCOpMode {
 
     public boolean manualTPS = true;
 
-    // --- Custom Override Tracking Commands ---
+
     public Command setTurretHeading(double degrees) {
         return new LambdaCommand("Set Turret Heading: " + degrees)
                 .setStart(() -> {
@@ -163,12 +176,7 @@ public class redNear extends NextFTCOpMode {
                 .setIsDone(() -> true);
     }
 
-    // NOTE: no static MotorEx flywheel/flywheel2 fields here on purpose — static hardware
-    // fields construct at class-load time (OpMode discovery), before any OpMode is active
-    // or hardwareMap exists, which is a known cause of an instant crash on init in NextFTC.
-
-    // ----------------------
-
+boolean autoShoot = false;
     @Override
     public void onInit() {
 
@@ -203,10 +211,11 @@ public class redNear extends NextFTCOpMode {
 
         servoStopper = new ServoEx("stopperServo");
 
+openStopper.schedule();
         isOverridden = true;
         preload = true;
 
-        overriddenTurretAngle = getClosestValidTurretAngle(-160);
+        overriddenTurretAngle = getClosestValidTurretAngle(-170);
         double hoodAngle = 0.4;
         hoodServo.setPosition(hoodAngle);
         servoStopper.setPosition(closeStopperPos);
@@ -223,11 +232,15 @@ public class redNear extends NextFTCOpMode {
         double lastServoPos = servoPositionSignal;
 
         currentTurretPos = targetTurretAngle;
+        flywheel = new MotorEx("launchingmotor");
+        flywheel2 = new MotorEx("launchingmotor2");
 
         telemetry.addLine("Initialized");
         telemetry.update();
     }
+    public static MotorEx flywheel;
 
+    public static MotorEx flywheel2 = new MotorEx("launchingmotor2");
     public Command closeStopper = new LambdaCommand()
             .setStart(() -> {
                 servoStopper.setPosition(closeStopperPos); // close
@@ -247,57 +260,49 @@ public class redNear extends NextFTCOpMode {
 
     public Command Auto() {
         return new SequentialGroup(
-                new Delay(0.3),
+                intakeMotorOff,
                 new FollowPath(paths.shootPreloads, true, 1.0),
+                new Delay(0.8),
                 intakeMotorOn,
-                openStopper,
-                new Delay(0.2),
-                closeStopper,
-                disablePreload,
+
+                new Delay(0.1),
+                setBrakeShooting,
 
 
-
-                // --- Spike 1 cycle ---
-                new FollowPath(paths.intakeSpike1, true, 1.0),
-                new FollowPath(paths.shootSpike1, true, 1.0),
-                new Delay(0.3),
 
                 // --- Spike 2 cycle ---
                 new FollowPath(paths.intakeSpike2, true, 1.0),
+                disablePreload,
                 new FollowPath(paths.shootSpike2, true, 1.0),
-                new Delay(0.3),
 
                 // --- Gate cycle 1 ---
                 new FollowPath(paths.gateIntake1, true, 1.0),
-                new Delay(1),
+                new Delay(1.1),
                 new FollowPath(paths.gateShoot1, true, 1.0),
-                new Delay(0.3),
 
                 // --- Gate cycle 2 ---
                 new FollowPath(paths.gateIntake2, true, 1.0),
                 new Delay(2.25),
                 new FollowPath(paths.gateShoot2, true, 1.0),
-                new Delay(0.3),
+
 
                 // --- Gate cycle 3 ---
                 new FollowPath(paths.gateIntake3, true, 1.0),
                 new Delay(2.25),
                 new FollowPath(paths.gateShoot3, true, 1.0),
-                new Delay(0.3),
 
                 // --- Gate cycle 4 ---
                 new FollowPath(paths.gateIntake4, true, 1.0),
                 new Delay(2.25),
                 new FollowPath(paths.gateShoot4, true, 1.0),
-                new Delay(0.3),
+                //new Delay(0.3),
+                setSOTMShooting,
 
                 // --- Gate cycle 5 ---
-//                new FollowPath(paths.gateIntake5, true, 1.0),
-//                new Delay(0.3),
-//                new FollowPath(paths.gateShoot5, true, 1.0),
-//                new Delay(0.3),
+                new FollowPath(paths.gateIntake5, true, 1.0),
+                new Delay(2.25),
+                new FollowPath(paths.lastGateWithPark, true, 1.0)
 
-                new FollowPath(paths.park, true, 1.0)
         );
     }
 
@@ -306,7 +311,8 @@ public class redNear extends NextFTCOpMode {
         matchStarted = true;
         Auto().schedule();
     }
-
+    public Command autoShootEnable = new LambdaCommand()
+            .setStart(()->autoShoot = true);
     private boolean preload = true;
 
     public Command disablePreload = new LambdaCommand()
@@ -342,57 +348,50 @@ public class redNear extends NextFTCOpMode {
         flywheelSpeed = results[0];
 
         if (preload == true) {
-            double hoodAngle = results[1];
-            hoodServo.setPosition(hoodAngle);
-
-            shooter((float) flywheelSpeed + 30);
-            double robotAngularVelocityRads = follower.getAngularVelocity();
-            double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
-            double feedforwardOffset = 0;
-
-            targetTurretAngle = getClosestValidTurretAngle(overriddenTurretAngle - turretOffset - feedforwardOffset);
-            double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
-            servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
-
-            turret1.setPosition(servoPositionSignal + servoOffset);
-            turret2.setPosition(servoPositionSignal - servoOffset);
-            double lastServoPos = servoPositionSignal;
-
-            currentTurretPos = targetTurretAngle;
+            flywheel.setPower(1);
+            flywheel2.setPower(-1);
+            openStopper.schedule();
+            turretOffset = -3;
 
         }
 
         if (preload == false) {
             shooter((float) flywheelSpeed);
-            double hoodAngle = results[1];
-            hoodServo.setPosition(hoodAngle);
-            double headingError = results[2];
-            double robotAngularVelocityRads = follower.getAngularVelocity();
-            double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
-            double feedforwardOffset = robotAngularVelocityDegs * 0.225;
-            targetTurretAngle = getClosestValidTurretAngle(headingError - turretOffset - feedforwardOffset);
-            double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
-            servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
+            turretOffset = 3;
 
-            turret1.setPosition(servoPositionSignal + servoOffset);
-            turret2.setPosition(servoPositionSignal - servoOffset);
-
-            currentTurretPos = targetTurretAngle;
         }
+        double hoodAngle = results[1];
+        hoodServo.setPosition(hoodAngle);
+        double headingError = results[2];
+        double robotAngularVelocityRads = follower.getAngularVelocity();
+        double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
+        double feedforwardOffset = robotAngularVelocityDegs * 0.115;
+        targetTurretAngle = getClosestValidTurretAngle(headingError + turretOffset - feedforwardOffset);
+        double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
+        servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
+
+        turret1.setPosition(servoPositionSignal + servoOffset);
+        turret2.setPosition(servoPositionSignal - servoOffset);
+
+        currentTurretPos = targetTurretAngle;
+
 
         Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.2), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.2), follower.getHeading());
 
-        if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 45) {
+        if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 38&&!preload) {
             intakeMotor.setPower(1);
             transfer.setPower(1);
             openStopper.schedule();
-        } else {
+        } else if(!preload) {
             closeStopper.schedule();
         }
 
         Storage.currentPose = follower.getPose();
 
         Storage.setPose = true;
+        telemetry.addData("XValue",follower.getPose().getX());
+        telemetry.addData("YValue",follower.getPose().getY());
+        telemetry.update();
     }
 
     @Override
@@ -409,6 +408,10 @@ public class redNear extends NextFTCOpMode {
         public PathChain intakeSpike2;
         public PathChain shootSpike2;
 
+        public PathChain gateIntakeTest;
+
+        public PathChain gateShootTest;
+
         public PathChain gateIntake1;
         public PathChain gateShoot1;
         public PathChain gateIntake2;
@@ -420,61 +423,67 @@ public class redNear extends NextFTCOpMode {
         public PathChain gateIntake5;
         public PathChain gateShoot5;
 
+        public PathChain lastGateWithPark;
+
         public PathChain park;
 
-        // Every pose below is the mirror() of the corresponding blue pose in
-        // Close24AutoPathsMTI: x' = 144 - x, y' = y, heading' = normalizeAngle(pi - heading).
-        // Blue values are noted in each comment for traceability.
-        Pose PRELOADS_SHOOT              = new Pose(112, 98, Math.toRadians(-90));   // blue (32, 98, 270)
-        Pose FIRST_SPIKE_1_CONTROL       = new Pose(120, 98);                          // blue (24, 98)
-        Pose FIRST_SPIKE_1               = new Pose(120, 94, Math.toRadians(-90));   // blue (24, 94, 270)
-        Pose FIRST_SPIKE_2               = new Pose(120, 87, Math.toRadians(-90));   // blue (24, 87, 270)
-        Pose FIRST_SPIKE_SHOOT           = new Pose(98, 84, Math.toRadians(-90));    // blue (46, 84, 270)
-        Pose SECOND_SPIKE_1              = new Pose(98, 53, Math.toRadians(-10));    // blue (46, 53, 190)
-        Pose SECOND_SPIKE_2              = new Pose(104, 58, Math.toRadians(0));     // blue (40, 58, 180)
-        Pose SECOND_SPIKE_3              = new Pose(125.5, 57, Math.toRadians(0));   // blue (18.5, 57, 180)
-        Pose SECOND_SPIKE_SHOOT_CONTROL  = new Pose(107, 66);                          // blue (37, 66)
-        Pose SECOND_SPIKE_SHOOT          = new Pose(88, 80, Math.toRadians(-29));    // blue (56, 80, 209)
-        Pose GATE_1                      = new Pose(105, 70, Math.toRadians(-29));   // blue (39, 70, 209)
-        Pose GATE_2                      = new Pose(115, 63, Math.toRadians(29));    // blue (29, 63, 151)
-        Pose GATE_3                      = new Pose(132.5, 57.5, Math.toRadians(29)); // blue (11.5, 57.5, 151)
-        Pose GATE_SHOOT_1                = new Pose(108, 59, Math.toRadians(-29));   // blue (36, 59, 209)
-        Pose GATE_SHOOT_2                = new Pose(88, 79, Math.toRadians(-29));    // blue (56, 79, 209)
-        Pose PARK_POSE                   = new Pose(95, 71);                           // blue (49, 71)
+
+        Pose GATE_1                      = new Pose(39, 70, Math.toRadians(-152));
+        Pose GATE_2                      = new Pose(29, 62.75, Math.toRadians(142));
+        Pose GATE_3                      = new Pose(10.5, 60, Math.toRadians(142));
+        Pose GATE_SHOOT_1                = new Pose(36, 59, Math.toRadians(-152));
+        Pose GATE_SHOOT_2                = new Pose(56, 79, Math.toRadians(-152));
+        Pose PARK_POSE                   = new Pose(49, 71);
 
         public Paths(Follower follower) {
-
             shootPreloads = follower.pathBuilder()
-                    .addPath(new BezierLine(start, PRELOADS_SHOOT))
-                    .setConstantHeadingInterpolation(PRELOADS_SHOOT.getHeading())
-                    .build();
-
-            intakeSpike1 = follower.pathBuilder()
-                    .addPath(new BezierCurve(PRELOADS_SHOOT, FIRST_SPIKE_1_CONTROL, FIRST_SPIKE_1))
-                    .setConstantHeadingInterpolation(PRELOADS_SHOOT.getHeading())
-                    .addPath(new BezierLine(FIRST_SPIKE_1, FIRST_SPIKE_2))
-                    .setConstantHeadingInterpolation(FIRST_SPIKE_2.getHeading())
-                    .build();
-
-            shootSpike1 = follower.pathBuilder()
-                    .addPath(new BezierLine(FIRST_SPIKE_2, FIRST_SPIKE_SHOOT))
-                    .setConstantHeadingInterpolation(FIRST_SPIKE_2.getHeading())
+                    .addPath(new BezierLine(start, new Pose(27, 100)))
+                    .setConstantHeadingInterpolation(Math.toRadians(270))
+                    //.addPoseCallback(new Pose(29.034,110.227),autoShootEnable,0.8)
                     .build();
 
             intakeSpike2 = follower.pathBuilder()
-                    .addPath(new BezierCurve(FIRST_SPIKE_SHOOT, SECOND_SPIKE_1, SECOND_SPIKE_2, SECOND_SPIKE_3))
-                    .setLinearHeadingInterpolation(FIRST_SPIKE_SHOOT.getHeading(), SECOND_SPIKE_2.getHeading(), 0.25)
+                    .addPath(new BezierLine(
+                            new Pose(27, 100),
+                            new Pose(20, 65)))
+                    .setConstantHeadingInterpolation(
+                            Math.toRadians(270))
                     .build();
 
             shootSpike2 = follower.pathBuilder()
-                    .addPath(new BezierCurve(SECOND_SPIKE_3, SECOND_SPIKE_SHOOT_CONTROL, SECOND_SPIKE_SHOOT))
-                    .setTangentHeadingInterpolation()
-                    .setReversed()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(24, 65),
+                                    GATE_SHOOT_2
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(-152))
                     .build();
 
-            // Close24AutoPathsMTI builds gateIntake/gateShoot the same way all 5 times —
-            // no per-cycle variation exists in the source, so repeating them here is a
-            // faithful copy, not a simplification.
+            intakeSpike1 = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    GATE_SHOOT_2,
+                                    new Pose(20.490, 83.297)
+                            )
+                    )
+                    .setTangentHeadingInterpolation()
+                    .build();
+
+            shootSpike1 = follower.pathBuilder()
+                    .addPath(
+                            new BezierLine(
+                                    new Pose(20.490, 83.297),
+                                    GATE_SHOOT_2
+                            )
+                    )
+                    .setLinearHeadingInterpolation(Math.toRadians(173), Math.toRadians(-152))
+                    .build();
+
+
+
+
+
             gateIntake1 = buildGateIntake(follower);
             gateShoot1 = buildGateShoot(follower);
 
@@ -490,9 +499,15 @@ public class redNear extends NextFTCOpMode {
             gateIntake5 = buildGateIntake(follower);
             gateShoot5 = buildGateShoot(follower);
 
+
             park = follower.pathBuilder()
                     .addPath(new BezierLine(GATE_SHOOT_2, PARK_POSE))
                     .setTangentHeadingInterpolation()
+                    .build();
+
+            lastGateWithPark = follower.pathBuilder()
+                    .addPath(new BezierCurve(GATE_3, new Pose(42.536, 77), new Pose(59, 102)))
+                    .setLinearHeadingInterpolation(GATE_3.getHeading(), Math.toRadians(90))
                     .build();
         }
 
@@ -511,6 +526,7 @@ public class redNear extends NextFTCOpMode {
             return follower.pathBuilder()
                     .addPath(new BezierCurve(GATE_3, GATE_SHOOT_1, GATE_SHOOT_2))
                     .setTangentHeadingInterpolation()
+                    //.setLinearHeadingInterpolation(Math.toRadians(-152), Math.toRadians(-135))
                     .setReversed()
                     .build();
         }
