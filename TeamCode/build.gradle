@@ -11,9 +11,19 @@
 
 // Custom definitions may go here
 
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url "https://repo.dairy.foundation/releases" }
+    }
+    dependencies {
+        classpath "dev.frozenmilk:Load:0.2.4"
+    }
+}
 // Include common definitions from above.
 apply from: '../build.common.gradle'
 apply from: '../build.dependencies.gradle'
+apply plugin: 'dev.frozenmilk.sinister.sloth.load'
 
 
 android {
