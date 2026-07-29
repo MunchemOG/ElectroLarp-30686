@@ -264,9 +264,10 @@ public class blueMidzone3 extends NextFTCOpMode {
                 .setIsDone(() -> true);
     }
     private SequentialGroup shoot = new SequentialGroup(
+            new Delay(0.1),
             openStopper,
             farTransfer,
-            new Delay(0.4),
+            new Delay(0.25),
             closeStopper);
 
 
@@ -285,29 +286,29 @@ public class blueMidzone3 extends NextFTCOpMode {
                 closeStopper,
                 // --- Spike 1 cycle ---
                 new FollowPath(paths.intakeSpike1, true, 1.0),
-                new Delay(0.3),
+                //new Delay(0.3),
                 intakeMotorOff,
                 new FollowPath(paths.shootSpike1, true, 1.0),
                 shoot,
                 // --- Spike 2 cycle ---
                 new FollowPath(paths.intakeSpike2, true, 1.0), //spike 3 so ice ice baby
-                new Delay(0.3),
+                //new Delay(0.3),
                 intakeMotorOff,
                 new FollowPath(paths.tunnelShoot, true, 0.9),
                 shoot,
                 // --- Sweep cycle 1 ---
                 new FollowPath(paths.intakeSweepHP1, true, 1.0),
-                new Delay(0.3),
+                //new Delay(0.3),
                 new FollowPath(paths.sweepAndShoot1, true, 0.9),
                 shoot,
                 // --- Sweep cycle 2 ---
                 new FollowPath(paths.intakeSweepHP2, true, 1.0),
-                new Delay(0.3),
+                //new Delay(0.3),
                 new FollowPath(paths.sweepAndShoot2, true, 0.9),
                 shoot,
                 // --- Sweep cycle 3 ---
                 new FollowPath(paths.intakeSweepHP3, true, 1.0),
-                new Delay(0.3),
+                //new Delay(0.3),
                 new FollowPath(paths.sweepAndShoot3, true, 0.9),
                 shoot,
 //                // --- Sweep cycle 4 ---
@@ -365,19 +366,19 @@ public class blueMidzone3 extends NextFTCOpMode {
         flywheelSpeed = results[0];
 
         if (preload == true) {
-            shooter(6000);
+            shooter(5900);
             double hoodAngle = results[1];
-            turretOffset = 10;
+            turretOffset = 4;
             hoodServo.setPosition(hoodAngle+0.25);
 
 
         }
 
         if (preload == false) {
-            shooter((float) flywheelSpeed);
+            shooter((float) flywheelSpeed -70);
             double hoodAngle = results[1];
             hoodServo.setPosition(hoodAngle);
-            turretOffset = 16;
+            turretOffset = 1;
 
         }
         double hoodAngle = results[1];
@@ -445,7 +446,7 @@ public class blueMidzone3 extends NextFTCOpMode {
         Pose PRELOAD_CONTROL = new Pose(61.721, 175.872);
         Pose FIRST_SPIKE = new Pose(14.9, 82.6, Math.toRadians(180));
         Pose FIRST_SPIKE_CONTROL = new Pose(100, 78.7);
-        Pose FIRST_SHOOT = new Pose(78.5, 103,Math.toRadians(205));
+        Pose FIRST_SHOOT = new Pose(75.5, 103,Math.toRadians(205));
         Pose SECOND_SPIKE = new Pose(10.5, 59, Math.toRadians(180));
         Pose SPIKE_2_CONTROL = new Pose(40.4, 50);
         Pose TUNNEL_SHOOT = new Pose(80.3, 95);//x = 83.3
@@ -453,7 +454,7 @@ public class blueMidzone3 extends NextFTCOpMode {
         Pose SWEEP_2 = new Pose(14, 81.7, Math.toRadians(240));
         Pose SWEEP_2_CONTROL = new Pose(18.7, 82.5);
         Pose SWEEP_3 = new Pose(11.5, 65.2, Math.toRadians(240));
-        Pose SWEEP_SHOOT = new Pose(83.8, 93.1);
+        Pose SWEEP_SHOOT = new Pose(76.3, 95.1);
         Pose PARK_POSE = new Pose(81, 87);
 
         public Paths(Follower follower) {
@@ -534,8 +535,8 @@ public class blueMidzone3 extends NextFTCOpMode {
                     .setConstantHeadingInterpolation(SWEEP_2.getHeading())
                     .addTemporalCallback(500, intakeMotorOff)
                     .addPath(new BezierLine(SWEEP_3, SWEEP_SHOOT))
-                    .setBrakingStrength(0.3)
-                    .setTValueConstraint(0.8)
+                    .setBrakingStrength(0.9)
+                    .setTangentHeadingInterpolation()
                     .setReversed()
                     .build();
         }

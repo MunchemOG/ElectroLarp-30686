@@ -290,7 +290,7 @@ public class redMidzone3 extends NextFTCOpMode {
                 new FollowPath(paths.intakeSpike2, true, 1.0), //spike 3 so ice ice baby
                 new Delay(0.3),
                 intakeMotorOff,
-                new FollowPath(paths.tunnelShoot, true, 0.9),
+                new FollowPath(paths.tunnelShoot, true, 0.85),
                 shoot,
                 // --- Sweep cycle 1 ---
                 new FollowPath(paths.intakeSweepHP1, true, 1.0),
@@ -362,19 +362,19 @@ public class redMidzone3 extends NextFTCOpMode {
         flywheelSpeed = results[0];
 
         if (preload == true) {
-            shooter(6000);
+            shooter(5850);
             double hoodAngle = results[1];
             turretOffset = -10;
-            hoodServo.setPosition(hoodAngle+0.25);
+            hoodServo.setPosition(hoodAngle+0.3);
 
 
         }
 
         if (preload == false) {
-            shooter((float) flywheelSpeed);
+            shooter((float) flywheelSpeed-70);
             double hoodAngle = results[1];
             hoodServo.setPosition(hoodAngle);
-            turretOffset = -16;
+            turretOffset = -7;
 
         }
         double hoodAngle = results[1];
@@ -438,15 +438,15 @@ public class redMidzone3 extends NextFTCOpMode {
         Pose PRELOAD_CONTROL = new Pose(130.279, 175.872);
         Pose FIRST_SPIKE = new Pose(177.1, 82.6, Math.toRadians(0));
         Pose FIRST_SPIKE_CONTROL = new Pose(92, 78.7);
-        Pose FIRST_SHOOT = new Pose(113.5, 103,Math.toRadians(-25));
+        Pose FIRST_SHOOT = new Pose(116.5, 103, Math.toRadians(-25));
         Pose SECOND_SPIKE = new Pose(181.5, 59, Math.toRadians(0));
         Pose SPIKE_2_CONTROL = new Pose(151.6, 50);
-        Pose TUNNEL_SHOOT = new Pose(111.7, 95);//x = 108.7
+        Pose TUNNEL_SHOOT = new Pose(108.7, 96);//x = 108.7
         Pose SWEEP_1 = new Pose(180.5, 84.2, Math.toRadians(-20));
         Pose SWEEP_2 = new Pose(178, 81.7, Math.toRadians(-60));
         Pose SWEEP_2_CONTROL = new Pose(173.3, 82.5);
         Pose SWEEP_3 = new Pose(180.5, 65.2, Math.toRadians(-60));
-        Pose SWEEP_SHOOT = new Pose(108.2, 93.1);
+        Pose SWEEP_SHOOT = new Pose(109.7, 96.1);
         Pose PARK_POSE = new Pose(111, 87);
 
         public Paths(Follower follower) {
@@ -526,8 +526,8 @@ public class redMidzone3 extends NextFTCOpMode {
                     .setConstantHeadingInterpolation(SWEEP_2.getHeading())
                     .addTemporalCallback(500, intakeMotorOff)
                     .addPath(new BezierLine(SWEEP_3, SWEEP_SHOOT))
-                    .setBrakingStrength(0.3)
-                    .setTValueConstraint(0.8)
+                    .setBrakingStrength(0.8)
+                    .setTangentHeadingInterpolation()
                     .setReversed()
                     .build();
         }
