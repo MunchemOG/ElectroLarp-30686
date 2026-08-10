@@ -114,14 +114,14 @@ public class DriveTrain2 implements Subsystem {
     public static double cmdRateFilterAlpha = 0.3;
     public static double cmdRateSpikeLimit = 400.0;
 
-    public static double maxSlewNormalDegPerSec = 300;
+    public static double maxSlewNormalDegPerSec = 400;
 
-    public static double maxSlewWrapDegPerSec = 300;
+    public static double maxSlewWrapDegPerSec = 540;
 
     public static boolean turretParked = false;
 
     public static double turretParkSignal = 0.5;
-    public static void toggleTurretPark() {
+    public static void toggleTurretPark(){
         turretParked = !turretParked;
     }
 
