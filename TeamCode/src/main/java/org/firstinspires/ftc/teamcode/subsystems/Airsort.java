@@ -1,15 +1,17 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.qualcomm.robotcore.hardware.CRServo;
 
-import dev.nextftc.core.commands.delays.Delay;
-import dev.nextftc.core.commands.groups.ParallelGroup;
-import dev.nextftc.core.commands.groups.SequentialGroup;
-import dev.nextftc.core.subsystems.Subsystem;
-import dev.nextftc.ftc.ActiveOpMode;
-import dev.nextftc.hardware.impl.CRServoEx;
-import dev.nextftc.hardware.impl.MotorEx;
-import dev.nextftc.hardware.powerable.SetPower;
+
+import com.pedropathing.ivy.Command;
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
+import com.qualcomm.robotcore.hardware.CRServo;
 
 public class Airsort implements Subsystem {
     public static final Airsort INSTANCE = new Airsort();
@@ -25,106 +27,106 @@ public class Airsort implements Subsystem {
 
 
 
-    ParallelGroup HoodRunUp=new ParallelGroup(
-            new SetPower(hoodServo1,1),
-            new SetPower(hoodServo2,-1)
+    Command HoodRunUp=parallel(
+            power(hoodServo1, 1),
+            power(hoodServo2, -1)
     );
 
-    public ParallelGroup HoodPowerZero=new ParallelGroup(
-            new SetPower(hoodServo1,0),
-            new SetPower(hoodServo2,0)
+    public Command HoodPowerZero=parallel(
+            power(hoodServo1, 0),
+            power(hoodServo2, 0)
     );
 
-    public SequentialGroup HoodDown=new SequentialGroup(
+    public Command HoodDown=sequential(
             HoodRunUp,
-            new Delay(0.18),
+            waitMs((0.18) * 1000.0),
             HoodPowerZero
     );
 
-    ParallelGroup HoodRunDown=new ParallelGroup(
-            new SetPower(hoodServo1,-1),
-            new SetPower(hoodServo2,1)
+    Command HoodRunDown=parallel(
+            power(hoodServo1, -1),
+            power(hoodServo2, 1)
     );
 
-    public SequentialGroup HoodUp=new SequentialGroup(
+    public Command HoodUp=sequential(
             HoodRunDown,
-            new Delay(0.17),
+            waitMs((0.17) * 1000.0),
             HoodPowerZero
     );
 
-    SequentialGroup PPGtoPGP /*SAME AS PGP TO PPG*/= new SequentialGroup(
-            new SetPower(transfer, 0.25),
+    Command PPGtoPGP /*SAME AS PGP TO PPG*/= sequential(
+            power(transfer, 0.25),
             TempHood.INSTANCE.HoodUp, //USED AS A DELAY HERE
-            new SetPower(transfer, 0),
-            new Delay(0.18),
-            new SetPower(transfer, 0.25),
+            power(transfer, 0),
+            waitMs((0.18) * 1000.0),
+            power(transfer, 0.25),
             TempHood.INSTANCE.HoodUp,
-            new SetPower(transfer, 0),
+            power(transfer, 0),
             TempHood.INSTANCE.HoodUp,
-            new SetPower(transfer, 0.4),
-            new Delay(0.2),
+            power(transfer, 0.4),
+            waitMs((0.2) * 1000.0),
             TempHood.INSTANCE.HoodDown,
-            new SetPower(transfer, 0)
+            power(transfer, 0)
     );
-    SequentialGroup GPPtoPGP /*SAME AS PGPtoGPP*/= new SequentialGroup(
-            new SetPower(transfer, 0.25),
+    Command GPPtoPGP /*SAME AS PGPtoGPP*/= sequential(
+            power(transfer, 0.25),
             TempHood.INSTANCE.HoodUp,
-            new SetPower(transfer, 0),
+            power(transfer, 0),
             TempHood.INSTANCE.HoodUp,
-            new SetPower(transfer, 0.25),
-            new Delay(0.05),
-            new SetPower(transfer, 0),
+            power(transfer, 0.25),
+            waitMs((0.05) * 1000.0),
+            power(transfer, 0),
             TempHood.INSTANCE.HoodDown,
-            new Delay(0.18),
-            new SetPower(transfer, 1),
-            new Delay(0.2),
-            new SetPower(transfer, 0)
+            waitMs((0.18) * 1000.0),
+            power(transfer, 1),
+            waitMs((0.2) * 1000.0),
+            power(transfer, 0)
     );
-    SequentialGroup PGPtoPPG /*SAME AS PPG TO PGP*/ = new SequentialGroup(
-            new SetPower(transfer, 0.25),
+    Command PGPtoPPG /*SAME AS PPG TO PGP*/ = sequential(
+            power(transfer, 0.25),
             TempHood.INSTANCE.HoodUp, //USED AS A DELAY HERE
-            new SetPower(transfer, 0),
-            new Delay(0.18),
-            new SetPower(transfer, 0.25),
+            power(transfer, 0),
+            waitMs((0.18) * 1000.0),
+            power(transfer, 0.25),
             TempHood.INSTANCE.HoodUp,
-            new SetPower(transfer, 0),
+            power(transfer, 0),
             TempHood.INSTANCE.HoodUp,
-            new SetPower(transfer, 0.4),
-            new Delay(0.2),
+            power(transfer, 0.4),
+            waitMs((0.2) * 1000.0),
             TempHood.INSTANCE.HoodDown,
-            new SetPower(transfer, 0)
+            power(transfer, 0)
     );
-//    SequentialGroup GPPtoPPG = new SequentialGroup(
-//            new SetPower(transfer, 0.25),
+//    Command GPPtoPPG = sequential(
+//            power(transfer, 0.25),
 //            TempHood.INSTANCE.HoodUp,
-//            new SetPower(transfer, 0),
+//            power(transfer, 0),
 //            TempHood.INSTANCE.HoodUp,
-//            new SetPower(transfer, 1),
-//            new Delay(0.35),
+//            power(transfer, 1),
+//            waitMs((0.35) * 1000.0),
 //            TempHood.INSTANCE.HoodDown,
-//            new SetPower(transfer, 0)
+//            power(transfer, 0)
 //    );
-//    SequentialGroup PPGtoGPP = new SequentialGroup(
-//            new SetPower(transfer, 1),
+//    Command PPGtoGPP = sequential(
+//            power(transfer, 1),
 //            TempHood.INSTANCE.HoodUp,
 //            TempHood.INSTANCE.HoodUp,
-//            new Delay(0.35),
+//            waitMs((0.35) * 1000.0),
 //            TempHood.INSTANCE.HoodDown,
-//            new SetPower(transfer, 0)
+//            power(transfer, 0)
 //    );
-//    SequentialGroup PGPtoGPP /*SAME AS GPPtoPGP*/ = new SequentialGroup(
-//            new SetPower(transfer, 0 .25),
+//    Command PGPtoGPP /*SAME AS GPPtoPGP*/ = sequential(
+//            power(transfer, 0 .25),
 //            TempHood.INSTANCE.HoodUp,
-//            new SetPower(transfer, 0),
+//            power(transfer, 0),
 //            TempHood.INSTANCE.HoodUp,
-//            new SetPower(transfer, 0.25),
-//            new Delay(0.05),
-//            new SetPower(transfer, 0),
+//            power(transfer, 0.25),
+//            waitMs((0.05) * 1000.0),
+//            power(transfer, 0),
 //            TempHood.INSTANCE.HoodDown,
-//            new Delay(0.18),
-//            new SetPower(transfer, 1),
-//            new Delay(0.2),
-//            new SetPower(transfer, 0)
+//            waitMs((0.18) * 1000.0),
+//            power(transfer, 1),
+//            waitMs((0.2) * 1000.0),
+//            power(transfer, 0)
 //    );
 //
 //
@@ -135,14 +137,14 @@ public class Airsort implements Subsystem {
 //            .withCase("PPG3", GPPtoPPG)
 //            .withCase("GPP1", PPGtoGPP)
 //            .withCase("GPP2", PGPtoGPP)
-//            .withDefault(new SetPower(transfer, 1));
+//            .withDefault(power(transfer, 1));
 
 
     @Override
     public void initialize() {
 
-        hoodServo1n= ActiveOpMode.hardwareMap().get(CRServo.class, "hoodServo1");
-        hoodServo2n=  ActiveOpMode.hardwareMap().get(CRServo.class, "hoodServo2");
+        hoodServo1n= RobotContext.hardwareMap().get(CRServo.class, "hoodServo1");
+        hoodServo2n=  RobotContext.hardwareMap().get(CRServo.class, "hoodServo2");
         transfer = new MotorEx("transfer").reversed();
 
 

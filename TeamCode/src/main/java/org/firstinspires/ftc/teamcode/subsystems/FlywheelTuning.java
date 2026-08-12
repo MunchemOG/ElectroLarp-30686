@@ -1,27 +1,25 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import dev.nextftc.core.components.BindingsComponent;
-import dev.nextftc.core.components.SubsystemComponent;
-import dev.nextftc.ftc.NextFTCOpMode;
-import dev.nextftc.ftc.components.BulkReadComponent;
-import dev.nextftc.hardware.impl.MotorEx;
-
 @TeleOp(name = "FlywheelTuning")
 @Configurable
-public class FlywheelTuning extends NextFTCOpMode {
+public class FlywheelTuning extends IvyOpMode {
     public FlywheelTuning() {
-        addComponents(
-                new SubsystemComponent(Flywheel.INSTANCE/*, Intake.INSTANCE, Spindexer.INSTANCE*/),
-                BulkReadComponent.INSTANCE,
-                BindingsComponent.INSTANCE
-
-        );
+        configurePedro(null, Flywheel.INSTANCE/*, Intake.INSTANCE, Spindexer.INSTANCE*/);
     }
 
     public static MotorEx flywheel = new MotorEx("launchingmotor2");

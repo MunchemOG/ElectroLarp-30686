@@ -1,5 +1,19 @@
 package org.firstinspires.ftc.teamcode.opModes.Auto.BLUE;
 
+import static com.pedropathing.api.Paths.*;
+
+import com.pedropathing.api.PoseFactory;
+
+
+
+import com.pedropathing.ivy.Command;
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.opModes.Auto.AutoPathRuntime.*;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.servoOffset;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.calculateShotVectorandUpdateHeading;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopperPos;
@@ -8,13 +22,11 @@ import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
 import static org.firstinspires.ftc.teamcode.subsystems.LaunchDetector.isOverlappingLaunchZone;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.Vector;
-import com.pedropathing.paths.PathChain;
-import com.pedropathing.util.Timer;
+import org.firstinspires.ftc.teamcode.pedroPathing.TeamFollower;
+import com.pedropathing.math.Pose;
+import org.firstinspires.ftc.teamcode.pedroPathing.PolarVector;
+import com.pedropathing.paths.Path;
+import org.firstinspires.ftc.teamcode.pedroPathing.Timer;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.PwmControl;
@@ -25,33 +37,16 @@ import org.firstinspires.ftc.teamcode.subsystems.Storage;
 
 import java.util.List;
 
-import dev.nextftc.core.commands.Command;
-import dev.nextftc.core.commands.delays.Delay;
-import dev.nextftc.core.commands.groups.SequentialGroup;
-import dev.nextftc.core.commands.utility.LambdaCommand;
-import dev.nextftc.core.components.BindingsComponent;
-import dev.nextftc.extensions.pedro.FollowPath;
-import dev.nextftc.extensions.pedro.PedroComponent;
-import dev.nextftc.ftc.ActiveOpMode;
-import dev.nextftc.ftc.NextFTCOpMode;
-import dev.nextftc.ftc.components.BulkReadComponent;
-import dev.nextftc.hardware.impl.MotorEx;
-import dev.nextftc.hardware.impl.ServoEx;
-
-
 @Autonomous(name = "Blue Near V1")
 @Configurable
-public class blueNear extends NextFTCOpMode {
+public class blueNear extends IvyOpMode {
+    private static final PoseFactory POSES = PoseFactory.radians();
 
     public blueNear() {
-        addComponents(
-                BulkReadComponent.INSTANCE,
-                BindingsComponent.INSTANCE,
-                new PedroComponent(hwMap -> Constants.createFollower(hwMap))
-        );
+        configurePedro(Constants::create);
     }
 
-    private Follower follower;
+    private TeamFollower follower;
     private MotorEx transfer;
     private Timer opmodeTimer;
     private Paths paths;
@@ -61,7 +56,7 @@ public class blueNear extends NextFTCOpMode {
     public static double startX = 32;
     public static double startY = 134;
 
-    public Pose start = new Pose(startX, startY, Math.toRadians(270));
+    public Pose start = POSES.of(startX, startY, Math.toRadians(270));
 
     // --- Turret tracking ---
     private ServoEx servoStopper;
@@ -94,13 +89,13 @@ public class blueNear extends NextFTCOpMode {
     public static double turretForwardOffset = -0.52588;
     public static double turretStrafeOffset = 0;
 
-    private Command intakeMotorOn = new LambdaCommand()
+    private Command intakeMotorOn = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(1);
                 transfer.setPower(1);
             });
 
-    private Command intakeMotorOff = new LambdaCommand()
+    private Command intakeMotorOff = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(0);
                 transfer.setPower(0);
@@ -125,26 +120,26 @@ public class blueNear extends NextFTCOpMode {
     }
 
     private Pose getTurretPose(Pose robotPose) {
-        double heading = robotPose.getHeading();
+        double heading = robotPose.heading();
 
         double cos = Math.cos(heading);
         double sin = Math.sin(heading);
 
-        double turretX = robotPose.getX()
+        double turretX = robotPose.x()
                 + turretForwardOffset * cos
                 - turretStrafeOffset * sin;
 
-        double turretY = robotPose.getY()
+        double turretY = robotPose.y()
                 + turretForwardOffset * sin
                 + turretStrafeOffset * cos;
 
-        return new Pose(turretX, turretY, heading);
+        return POSES.of(turretX, turretY, heading);
     }
 
-    private Vector getTurretToGoalVector(Pose turretPose) {
-        return new Vector(
-                turretPose.distanceFrom(new Pose(goalX, goalY)),
-                Math.atan2(goalY - turretPose.getY(), goalX - turretPose.getX())
+    private PolarVector getTurretToGoalVector(Pose turretPose) {
+        return new PolarVector(
+                turretPose.distance(POSES.of(goalX, goalY, 0)),
+                Math.atan2(goalY - turretPose.y(), goalX - turretPose.x())
         );
     }
 
@@ -159,25 +154,25 @@ public class blueNear extends NextFTCOpMode {
                     isOverridden = true;
                     overriddenTurretAngle = getClosestValidTurretAngle(degrees);
                 })
-                .setIsDone(() -> true);
+                .setDone(() -> true);
     }
 
     // NOTE: no static MotorEx flywheel/flywheel2 fields here on purpose — static hardware
     // fields construct at class-load time (OpMode discovery), before any OpMode is active
-    // or hardwareMap exists, which is a known cause of an instant crash on init in NextFTC.
+    // or hardwareMap exists, which is a known cause of an instant crash during OpMode init.
 
     // ----------------------
 
     @Override
     public void onInit() {
 
-        allHubs = ActiveOpMode.hardwareMap().getAll(LynxModule.class);
+        allHubs = RobotContext.hardwareMap().getAll(LynxModule.class);
 
         for (LynxModule hub : allHubs) {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
 
-        follower = PedroComponent.follower();
+        follower = PedroRuntime.follower();
 
         follower.setStartingPose(start);
 
@@ -188,11 +183,11 @@ public class blueNear extends NextFTCOpMode {
         intakeMotor = new MotorEx("intakeMotor");
         transfer = new MotorEx("transferMotor");
 
-        turret1 = ActiveOpMode.hardwareMap().get(
+        turret1 = RobotContext.hardwareMap().get(
                 ServoImplEx.class,
                 "turretServo1");
 
-        turret2 = ActiveOpMode.hardwareMap().get(
+        turret2 = RobotContext.hardwareMap().get(
                 ServoImplEx.class,
                 "turretServo2");
 
@@ -227,76 +222,76 @@ public class blueNear extends NextFTCOpMode {
         telemetry.update();
     }
 
-    public Command closeStopper = new LambdaCommand()
+    public Command closeStopper = Command.build()
             .setStart(() -> {
                 servoStopper.setPosition(closeStopperPos); // close
-            }).setIsDone(() -> true);
-    public Command openStopper = new LambdaCommand()
+            }).setDone(() -> true);
+    public Command openStopper = Command.build()
             .setStart(() -> {
                 servoStopper.setPosition(openStopperPos); // open
-            }).setIsDone(() -> true);
+            }).setDone(() -> true);
 
     public Command enableGoalTracking() {
-        return new LambdaCommand("Enable Goal Tracking")
+        return Command.build()
                 .setStart(() -> {
                     isOverridden = false;
                 })
-                .setIsDone(() -> true);
+                .setDone(() -> true);
     }
 
 
     public Command Auto() {
-        return new SequentialGroup(
-                new Delay(0.3),
-                new FollowPath(paths.shootPreloads, true, 1.0),
+        return sequential(
+                waitMs((0.3) * 1000.0),
+                follow(follower, paths.shootPreloads, true, 1.0),
 
                 intakeMotorOn,
                 openStopper,
-                new Delay(0.2),
+                waitMs((0.2) * 1000.0),
                 closeStopper,
                 disablePreload,
 
                 // --- Spike 1 cycle ---
-                new FollowPath(paths.intakeSpike1, true, 1.0),
-                new FollowPath(paths.shootSpike1, true, 1.0),
-                new Delay(0.3),
+                follow(follower, paths.intakeSpike1, true, 1.0),
+                follow(follower, paths.shootSpike1, true, 1.0),
+                waitMs((0.3) * 1000.0),
 
                 // --- Spike 2 cycle ---
-                new FollowPath(paths.intakeSpike2, true, 1.0),
-                new FollowPath(paths.shootSpike2, true, 1.0),
-                new Delay(0.3),
+                follow(follower, paths.intakeSpike2, true, 1.0),
+                follow(follower, paths.shootSpike2, true, 1.0),
+                waitMs((0.3) * 1000.0),
 
                 // --- Gate cycle 1 ---
-                new FollowPath(paths.gateIntake1, true, 1.0),
-                new Delay(1),
-                new FollowPath(paths.gateShoot1, true, 1.0),
-                new Delay(0.3),
+                follow(follower, paths.gateIntake1, true, 1.0),
+                waitMs((1) * 1000.0),
+                follow(follower, paths.gateShoot1, true, 1.0),
+                waitMs((0.3) * 1000.0),
 
                 // --- Gate cycle 2 ---
-                new FollowPath(paths.gateIntake2, true, 1.0),
-                new Delay(2.25),
-                new FollowPath(paths.gateShoot2, true, 1.0),
-                new Delay(0.3),
+                follow(follower, paths.gateIntake2, true, 1.0),
+                waitMs((2.25) * 1000.0),
+                follow(follower, paths.gateShoot2, true, 1.0),
+                waitMs((0.3) * 1000.0),
 
                 // --- Gate cycle 3 ---
-                new FollowPath(paths.gateIntake3, true, 1.0),
-                new Delay(2.25),
-                new FollowPath(paths.gateShoot3, true, 1.0),
-                new Delay(0.3),
+                follow(follower, paths.gateIntake3, true, 1.0),
+                waitMs((2.25) * 1000.0),
+                follow(follower, paths.gateShoot3, true, 1.0),
+                waitMs((0.3) * 1000.0),
 
                 // --- Gate cycle 4 ---
-                new FollowPath(paths.gateIntake4, true, 1.0),
-                new Delay(2.25),
-                new FollowPath(paths.gateShoot4, true, 1.0),
-                new Delay(0.3),
+                follow(follower, paths.gateIntake4, true, 1.0),
+                waitMs((2.25) * 1000.0),
+                follow(follower, paths.gateShoot4, true, 1.0),
+                waitMs((0.3) * 1000.0),
 
                 // --- Gate cycle 5 ---
-//                new FollowPath(paths.gateIntake5, true, 1.0),
-//                new Delay(0.3),
-//                new FollowPath(paths.gateShoot5, true, 1.0),
-//                new Delay(0.3),
+//                follow(follower, paths.gateIntake5, true, 1.0),
+//                waitMs((0.3) * 1000.0),
+//                follow(follower, paths.gateShoot5, true, 1.0),
+//                waitMs((0.3) * 1000.0),
 
-                new FollowPath(paths.park, true, 1.0)
+                follow(follower, paths.park, true, 1.0)
         );
     }
 
@@ -308,7 +303,7 @@ public class blueNear extends NextFTCOpMode {
 
     private boolean preload = true;
 
-    public Command disablePreload = new LambdaCommand()
+    public Command disablePreload = Command.build()
             .setStart(() -> preload = false);
     private double flywheelSpeed;
 
@@ -329,9 +324,9 @@ public class blueNear extends NextFTCOpMode {
 
         Pose turretPose = getTurretPose(currPose);
 
-        double robotHeading = follower.getPose().getHeading();
+        double robotHeading = follower.getPose().heading();
 
-        Vector robotToGoalVector = getTurretToGoalVector(turretPose);
+        PolarVector robotToGoalVector = getTurretToGoalVector(turretPose);
 
         Double[] results = calculateShotVectorandUpdateHeading(
                 robotHeading,
@@ -378,7 +373,7 @@ public class blueNear extends NextFTCOpMode {
             currentTurretPos = targetTurretAngle;
         }
 
-        Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.25), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.25), follower.getHeading());
+        Pose futurepose = POSES.of(follower.getPose().x() + (follower.getVelocity().getXComponent() * 0.25), follower.getPose().y() + (follower.getVelocity().getYComponent() * 0.25), follower.heading());
 
         if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 45) {
             intakeMotor.setPower(1);
@@ -401,74 +396,59 @@ public class blueNear extends NextFTCOpMode {
 
     public class Paths {
 
-        public PathChain shootPreloads;
-        public PathChain intakeSpike1;
-        public PathChain shootSpike1;
-        public PathChain intakeSpike2;
-        public PathChain shootSpike2;
+        public Path shootPreloads;
+        public Path intakeSpike1;
+        public Path shootSpike1;
+        public Path intakeSpike2;
+        public Path shootSpike2;
 
-        public PathChain gateIntake1;
-        public PathChain gateShoot1;
-        public PathChain gateIntake2;
-        public PathChain gateShoot2;
-        public PathChain gateIntake3;
-        public PathChain gateShoot3;
-        public PathChain gateIntake4;
-        public PathChain gateShoot4;
-        public PathChain gateIntake5;
-        public PathChain gateShoot5;
+        public Path gateIntake1;
+        public Path gateShoot1;
+        public Path gateIntake2;
+        public Path gateShoot2;
+        public Path gateIntake3;
+        public Path gateShoot3;
+        public Path gateIntake4;
+        public Path gateShoot4;
+        public Path gateIntake5;
+        public Path gateShoot5;
 
-        public PathChain park;
+        public Path park;
 
         // Raw blue-alliance poses, copied directly from Close24AutoPathsMTI's
         // ColoredDecodePose field values (blue is the unmirrored base pose there,
         // so these numbers are exact, not approximated).
-        Pose PRELOADS_SHOOT              = new Pose(32, 98, Math.toRadians(270));
-        Pose FIRST_SPIKE_1_CONTROL       = new Pose(24, 98);
-        Pose FIRST_SPIKE_1               = new Pose(24, 94, Math.toRadians(270));
-        Pose FIRST_SPIKE_2               = new Pose(24, 87, Math.toRadians(270));
-        Pose FIRST_SPIKE_SHOOT           = new Pose(46, 84, Math.toRadians(270));
-        Pose SECOND_SPIKE_1              = new Pose(46, 53, Math.toRadians(190));
-        Pose SECOND_SPIKE_2              = new Pose(40, 58, Math.toRadians(180));
-        Pose SECOND_SPIKE_3              = new Pose(18.5, 57, Math.toRadians(180));
-        Pose SECOND_SPIKE_SHOOT_CONTROL  = new Pose(37, 66);
-        Pose SECOND_SPIKE_SHOOT          = new Pose(56, 80, Math.toRadians(209));
-        Pose GATE_1                      = new Pose(39, 70, Math.toRadians(209));
-        Pose GATE_2                      = new Pose(29, 63, Math.toRadians(151));
-        Pose GATE_3                      = new Pose(11.5, 57.5, Math.toRadians(151));
-        Pose GATE_SHOOT_1                = new Pose(36, 59, Math.toRadians(209));
-        Pose GATE_SHOOT_2                = new Pose(56, 79, Math.toRadians(209));
-        Pose PARK_POSE                   = new Pose(49, 71);
+        Pose PRELOADS_SHOOT              = POSES.of(32, 98, Math.toRadians(270));
+        Pose FIRST_SPIKE_1_CONTROL       = POSES.of(24, 98, 0);
+        Pose FIRST_SPIKE_1               = POSES.of(24, 94, Math.toRadians(270));
+        Pose FIRST_SPIKE_2               = POSES.of(24, 87, Math.toRadians(270));
+        Pose FIRST_SPIKE_SHOOT           = POSES.of(46, 84, Math.toRadians(270));
+        Pose SECOND_SPIKE_1              = POSES.of(46, 53, Math.toRadians(190));
+        Pose SECOND_SPIKE_2              = POSES.of(40, 58, Math.toRadians(180));
+        Pose SECOND_SPIKE_3              = POSES.of(18.5, 57, Math.toRadians(180));
+        Pose SECOND_SPIKE_SHOOT_CONTROL  = POSES.of(37, 66, 0);
+        Pose SECOND_SPIKE_SHOOT          = POSES.of(56, 80, Math.toRadians(209));
+        Pose GATE_1                      = POSES.of(39, 70, Math.toRadians(209));
+        Pose GATE_2                      = POSES.of(29, 63, Math.toRadians(151));
+        Pose GATE_3                      = POSES.of(11.5, 57.5, Math.toRadians(151));
+        Pose GATE_SHOOT_1                = POSES.of(36, 59, Math.toRadians(209));
+        Pose GATE_SHOOT_2                = POSES.of(56, 79, Math.toRadians(209));
+        Pose PARK_POSE                   = POSES.of(49, 71, 0);
 
-        public Paths(Follower follower) {
+        public Paths(TeamFollower follower) {
 
-            shootPreloads = follower.pathBuilder()
-                    .addPath(new BezierLine(start, PRELOADS_SHOOT))
-                    .setConstantHeadingInterpolation(PRELOADS_SHOOT.getHeading())
-                    .build();
+            shootPreloads = line(start, PRELOADS_SHOOT).constant(PRELOADS_SHOOT.heading());
 
-            intakeSpike1 = follower.pathBuilder()
-                    .addPath(new BezierCurve(PRELOADS_SHOOT, FIRST_SPIKE_1_CONTROL, FIRST_SPIKE_1))
-                    .setConstantHeadingInterpolation(PRELOADS_SHOOT.getHeading())
-                    .addPath(new BezierLine(FIRST_SPIKE_1, FIRST_SPIKE_2))
-                    .setConstantHeadingInterpolation(FIRST_SPIKE_2.getHeading())
-                    .build();
+            intakeSpike1 = path(
+curve(PRELOADS_SHOOT, FIRST_SPIKE_1_CONTROL, FIRST_SPIKE_1).constant(PRELOADS_SHOOT.heading()),
+line(FIRST_SPIKE_1, FIRST_SPIKE_2).constant(FIRST_SPIKE_2.heading())
+);
 
-            shootSpike1 = follower.pathBuilder()
-                    .addPath(new BezierLine(FIRST_SPIKE_2, FIRST_SPIKE_SHOOT))
-                    .setConstantHeadingInterpolation(FIRST_SPIKE_2.getHeading())
-                    .build();
+            shootSpike1 = line(FIRST_SPIKE_2, FIRST_SPIKE_SHOOT).constant(FIRST_SPIKE_2.heading());
 
-            intakeSpike2 = follower.pathBuilder()
-                    .addPath(new BezierCurve(FIRST_SPIKE_SHOOT, SECOND_SPIKE_1, SECOND_SPIKE_2, SECOND_SPIKE_3))
-                    .setLinearHeadingInterpolation(FIRST_SPIKE_SHOOT.getHeading(), SECOND_SPIKE_2.getHeading(), 0.25)
-                    .build();
+            intakeSpike2 = curve(FIRST_SPIKE_SHOOT, SECOND_SPIKE_1, SECOND_SPIKE_2, SECOND_SPIKE_3).linear(FIRST_SPIKE_SHOOT.heading(), SECOND_SPIKE_2.heading(), 0.25);
 
-            shootSpike2 = follower.pathBuilder()
-                    .addPath(new BezierCurve(SECOND_SPIKE_3, SECOND_SPIKE_SHOOT_CONTROL, SECOND_SPIKE_SHOOT))
-                    .setTangentHeadingInterpolation()
-                    .setReversed()
-                    .build();
+            shootSpike2 = curve(SECOND_SPIKE_3, SECOND_SPIKE_SHOOT_CONTROL, SECOND_SPIKE_SHOOT).reverseTangent();
 
             // Close24AutoPathsMTI builds gateIntake/gateShoot the same way all 5 times —
             // no per-cycle variation exists in the source, so repeating them here is a
@@ -488,29 +468,19 @@ public class blueNear extends NextFTCOpMode {
             gateIntake5 = buildGateIntake(follower);
             gateShoot5 = buildGateShoot(follower);
 
-            park = follower.pathBuilder()
-                    .addPath(new BezierLine(GATE_SHOOT_2, PARK_POSE))
-                    .setTangentHeadingInterpolation()
-                    .build();
+            park = line(GATE_SHOOT_2, PARK_POSE).tangent();
         }
 
-        private PathChain buildGateIntake(Follower follower) {
-            return follower.pathBuilder()
-                    .addPath(new BezierLine(GATE_SHOOT_2, GATE_1))
-                    .setTangentHeadingInterpolation()
-                    .addPath(new BezierLine(GATE_1, GATE_2))
-                    .setLinearHeadingInterpolation(GATE_1.getHeading(), GATE_2.getHeading())
-                    .addPath(new BezierLine(GATE_2, GATE_3))
-                    .setConstantHeadingInterpolation(GATE_3.getHeading())
-                    .build();
+        private Path buildGateIntake(TeamFollower follower) {
+            return path(
+line(GATE_SHOOT_2, GATE_1).tangent(),
+line(GATE_1, GATE_2).linear(GATE_1.heading(), GATE_2.heading()),
+line(GATE_2, GATE_3).constant(GATE_3.heading())
+);
         }
 
-        private PathChain buildGateShoot(Follower follower) {
-            return follower.pathBuilder()
-                    .addPath(new BezierCurve(GATE_3, GATE_SHOOT_1, GATE_SHOOT_2))
-                    .setTangentHeadingInterpolation()
-                    .setReversed()
-                    .build();
+        private Path buildGateShoot(TeamFollower follower) {
+            return curve(GATE_3, GATE_SHOOT_1, GATE_SHOOT_2).reverseTangent();
         }
     }
 }

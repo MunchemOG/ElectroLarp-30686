@@ -1,14 +1,20 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterConstants.SCORE_ANGLE;
 import static java.lang.Double.isNaN;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.math.MathFunctions;
-import com.pedropathing.math.Vector;
-
-import dev.nextftc.core.subsystems.Subsystem;
-import dev.nextftc.ftc.ActiveOpMode;
+import org.firstinspires.ftc.teamcode.pedroPathing.MathFunctions;
+import org.firstinspires.ftc.teamcode.pedroPathing.PolarVector;
 
 @Configurable
 public class FarShooterCalc implements Subsystem {
@@ -29,7 +35,7 @@ public class FarShooterCalc implements Subsystem {
 
     public static double accelScalar = 0.1; // Set to 0 to disable
 
-    public static Double[] calculateShotVectorandUpdateHeading(double robotHeading, Vector robotToGoalVector, Vector robotVel, Vector robotAccel){
+    public static Double[] calculateShotVectorandUpdateHeading(double robotHeading, PolarVector robotToGoalVector, PolarVector robotVel, PolarVector robotAccel){
         double g = 32.174*12;
         double x = robotToGoalVector.getMagnitude()-ShooterConstants.PASS_THROUGH_POINT_RADIUS;
         //double y = -4.5745*temp*temp*temp + 25.978*temp*temp - 48.395*temp + 58.675;
@@ -54,8 +60,8 @@ public class FarShooterCalc implements Subsystem {
         }
         double flywheelSpeed = Math.sqrt(g * x * x / (2 * Math.pow(Math.cos(hoodAngle), 2) * (x * Math. tan(hoodAngle) - y)));
 
-        Vector robotVelocity;
-        robotVelocity = new Vector(robotVel.getMagnitude(), robotVel.getTheta());
+        PolarVector robotVelocity;
+        robotVelocity = new PolarVector(robotVel.getMagnitude(), robotVel.getTheta());
 
 
         double coordinateTheta = robotVelocity.getTheta() - robotToGoalVector.getTheta();
@@ -109,9 +115,9 @@ public class FarShooterCalc implements Subsystem {
 
         double hoodTime = (0.01625 * what) - 0.6;
 
-        ActiveOpMode.telemetry().addData("distance: ", x);
-        ActiveOpMode.telemetry().addData("height: ", y);
-        ActiveOpMode.telemetry().addData("headingAngle", headingAngle);
+        RobotContext.telemetry().addData("distance: ", x);
+        RobotContext.telemetry().addData("height: ", y);
+        RobotContext.telemetry().addData("headingAngle", headingAngle);
 
         Double[] returnvalue = {requiredTPS, hoodTime, headingAngle};
         return returnvalue;

@@ -1,16 +1,25 @@
 package org.firstinspires.ftc.teamcode.opModes.Auto;
 
-import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.BezierPoint;
-import com.pedropathing.geometry.FuturePose;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.MathFunctions;
-import com.pedropathing.paths.HeadingInterpolator;
+import com.pedropathing.api.PoseFactory;
+import static com.pedropathing.api.Paths.*;
+
+
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.opModes.Auto.AutoPathRuntime.*;
+import com.pedropathing.math.Pose;
+import com.pedropathing.paths.Path;
+import org.firstinspires.ftc.teamcode.pedroPathing.MathFunctions;
 
 import java.util.Arrays;
 
-public class ColoredDecodePose implements FuturePose {
+public class ColoredDecodePose {
+
+    private static final PoseFactory POSES = PoseFactory.radians();
     private final Pose pose;
     private final AllianceColor color;
     private Pose blue;
@@ -24,7 +33,7 @@ public class ColoredDecodePose implements FuturePose {
     }
 
     public ColoredDecodePose(double posX, double posY, double heading, AllianceColor allianceColor) {
-        this(new Pose(posX, posY, heading), allianceColor);
+        this(POSES.of(posX, posY, heading), allianceColor);
     }
 
     public ColoredDecodePose(Pose pose, AllianceColor color) {
@@ -36,11 +45,11 @@ public class ColoredDecodePose implements FuturePose {
     }
 
     public ColoredDecodePose(double x, double y, double heading) {
-        this(new Pose(x, y, heading), AllianceColor.Blue);
+        this(POSES.of(x, y, heading), AllianceColor.Blue);
     }
 
     public ColoredDecodePose(double x, double y) {
-        this(new Pose(x, y), AllianceColor.Blue);
+        this(POSES.of(x, y, 0), AllianceColor.Blue);
     }
 
     public ColoredDecodePose() {
@@ -49,53 +58,50 @@ public class ColoredDecodePose implements FuturePose {
 
     public Pose getPose(AllianceColor desiredColor) {
         if (desiredColor.equals(AllianceColor.Red)) {
-            if (red == null) red = pose.mirror();
+            if (red == null) red = mirror(pose);
             return red;
         }
 
-        if (blue == null) blue = pose.mirror();
+        if (blue == null) blue = mirror(pose);
         return blue;
     }
 
-    @Override
     public Pose getPose() {
         return getPose(Globals.allianceColor);
     }
 
     public ColoredDecodePose down(double inches) {
-        return new ColoredDecodePose(this.pose.plus(new Pose(0, -inches)), color);
+        return new ColoredDecodePose(this.pose.plus(POSES.of(0, -inches, 0)), color);
     }
 
     public ColoredDecodePose up(double inches) {
-        return new ColoredDecodePose(this.pose.plus(new Pose(0, inches)), color);
+        return new ColoredDecodePose(this.pose.plus(POSES.of(0, inches, 0)), color);
     }
 
     public ColoredDecodePose towardsRedWall(double inches) {
-        return new ColoredDecodePose(this.pose.plus(new Pose(color == AllianceColor.Blue ? inches : -inches, 0)), color);
+        return new ColoredDecodePose(this.pose.plus(POSES.of(color == AllianceColor.Blue ? inches : -inches, 0, 0)), color);
     }
 
     public ColoredDecodePose towardsBlueWall(double inches) {
-        return new ColoredDecodePose(this.pose.plus(new Pose(color == AllianceColor.Red ? inches : -inches, 0)), color);
+        return new ColoredDecodePose(this.pose.plus(POSES.of(color == AllianceColor.Red ? inches : -inches, 0, 0)), color);
     }
 
-    public static BezierCurve makeBezier(ColoredDecodePose... poses) {
-        return new BezierCurve(Arrays.stream(poses).map(ColoredDecodePose::getPose).toArray(Pose[]::new));
+    public static Path makeBezier(ColoredDecodePose... poses) {
+        return curve(Arrays.stream(poses).map(ColoredDecodePose::getPose).toArray(Pose[]::new));
     }
 
-    public static BezierCurve through(ColoredDecodePose... poses) {
-        return BezierCurve.through(Arrays.stream(poses).map(ColoredDecodePose::getPose).toArray(Pose[]::new));
+    public static Path through(ColoredDecodePose... poses) {
+        return com.pedropathing.api.Paths.through(
+                Arrays.stream(poses).map(ColoredDecodePose::getPose).toArray(Pose[]::new));
     }
 
-    public static BezierLine makeBezier(ColoredDecodePose pose1, ColoredDecodePose pose2) {
-        return new BezierLine(pose1.getPose(), pose2.getPose());
+    public static Path makeBezier(ColoredDecodePose pose1, ColoredDecodePose pose2) {
+        return line(pose1.getPose(), pose2.getPose());
     }
 
-    public static BezierPoint makeBezier(ColoredDecodePose pose) {
-        return new BezierPoint(pose.getPose());
-    }
-
-    public static HeadingInterpolator mirror(HeadingInterpolator interpolation) {
-        return t -> MathFunctions.normalizeAngle(Math.PI - interpolation.interpolate(t));
+    private static Pose mirror(Pose source) {
+        return POSES.of(144 - source.x(), source.y(),
+                MathFunctions.normalizeAngle(Math.PI - source.heading()));
     }
 
     public AllianceColor getColor() {
@@ -107,7 +113,7 @@ public class ColoredDecodePose implements FuturePose {
     }
 
     public double getHeading() {
-        return getPose().getHeading();
+        return getPose().heading();
     }
 
     public ColoredDecodePose offsetOppositeColor(Pose offset) {
@@ -119,7 +125,7 @@ public class ColoredDecodePose implements FuturePose {
     }
 
     public static double getTangentHeading(ColoredDecodePose pose1, ColoredDecodePose pose2) {
-        return Math.atan2(pose2.getPose().getY() - pose1.getPose().getY(), pose2.getPose().getX() - pose1.getPose().getX());
+        return Math.atan2(pose2.getPose().y() - pose1.getPose().y(), pose2.getPose().x() - pose1.getPose().x());
     }
 
     public static double getHeading(double heading) {
@@ -127,8 +133,4 @@ public class ColoredDecodePose implements FuturePose {
         return heading;
     }
 
-    @Override
-    public boolean initialized() {
-        return true;
-    }
 }

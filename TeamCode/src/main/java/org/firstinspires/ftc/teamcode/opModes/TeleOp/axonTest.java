@@ -1,30 +1,20 @@
 package org.firstinspires.ftc.teamcode.opModes.TeleOp;
 
 
+
 //import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalc.calculateShotVectorandUpdateHeading;
 
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import java.util.List;
 
-import dev.nextftc.core.components.BindingsComponent;
-import dev.nextftc.ftc.ActiveOpMode;
-import dev.nextftc.ftc.NextFTCOpMode;
-import dev.nextftc.ftc.components.BulkReadComponent;
-
 @TeleOp(name = "4 Axon Test")
-public class axonTest extends NextFTCOpMode {
-    public axonTest() {
-        addComponents(
-                BulkReadComponent.INSTANCE,
-                BindingsComponent.INSTANCE
-
-        );
-    }
+public class axonTest extends LinearOpMode {
     private static final double NUM1 = 0.0;
     private static final double[] NUM2_PRESETS = {1.0, 0.5, 0.3, 0.2};
     private static final double SECONDS_PER_FULL_SWING = 0.3;
@@ -45,24 +35,19 @@ public class axonTest extends NextFTCOpMode {
     private List<LynxModule> allHubs;
 
     @Override
-    public void onInit(){
-        allHubs = ActiveOpMode.hardwareMap().getAll(LynxModule.class);
+    public void runOpMode(){
+        allHubs = hardwareMap.getAll(LynxModule.class);
 
         for (LynxModule hub : allHubs) {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
-        testServo1 = ActiveOpMode.hardwareMap().get(ServoImplEx.class, "turretServo1");
-        testServo2 = ActiveOpMode.hardwareMap().get(ServoImplEx.class, "turretServo2");
+        testServo1 = hardwareMap.get(ServoImplEx.class, "turretServo1");
+        testServo2 = hardwareMap.get(ServoImplEx.class, "turretServo2");
         testServo1.setPwmRange(new PwmControl.PwmRange(500, 2500));
         testServo2.setPwmRange(new PwmControl.PwmRange(500, 2500));
         telemetry.addLine("WARNING! Ensure White Turret Gears are Removed");
         telemetry.addLine("Initialized");
         telemetry.update();
-
-    }
-    @Override
-    public void onStartButtonPressed () {
-
         testServo1.setPosition(NUM1);
         testServo2.setPosition(NUM1);
         currentTargetPos = NUM1;

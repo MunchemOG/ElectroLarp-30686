@@ -1,15 +1,17 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 
+
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import com.bylazar.configurables.annotations.Configurable;
 
-import dev.nextftc.bindings.*;
-import dev.nextftc.control.ControlSystem;
-import dev.nextftc.control.KineticState;
-import dev.nextftc.control.feedback.PIDCoefficients;
-import dev.nextftc.control.feedforward.BasicFeedforwardParameters;
-import dev.nextftc.core.subsystems.Subsystem;
-import dev.nextftc.hardware.impl.MotorEx;
 @Configurable
 public class Flywheel implements Subsystem {
     public Flywheel() {
@@ -20,9 +22,6 @@ public class Flywheel implements Subsystem {
     public static double flywheelvelocity;
 
     public static double flywheelvelocity2;
-    private ControlSystem controller1;
-    private ControlSystem controller2;
-
     public static MotorEx flywheel = new MotorEx("launchingmotor");
 
     public static MotorEx flywheel2 = new MotorEx("launchingmotor2");
@@ -33,32 +32,25 @@ public class Flywheel implements Subsystem {
 
     public static double configvelocity = 1400; //far zone - ~1500. near zone - ~1200-1300
 
-    public static void velocityControlWithFeedforwardExample(KineticState currentstate, float configtps) {
-        ControlSystem controller1 = ControlSystem.builder()
-                .velPid(new PIDCoefficients(kP, 0, 0))
-                .basicFF(new BasicFeedforwardParameters(0, 0, kS))
-                .build();
-        controller1.setGoal(new KineticState(0.0, configtps, 0.0));
-        flywheel.setPower(controller1.calculate(currentstate) + kF * configtps);
+    private static double controlPower(double measuredTps, double targetTps) {
+        if (Math.abs(targetTps) < 1e-6) return 0;
+        double power = Math.copySign(kS, targetTps) + kF * targetTps
+                + kP * (targetTps - measuredTps);
+        return Math.max(-1, Math.min(1, power));
     }
 
-    public static void velocityControlWithFeedforwardExample2(KineticState currentstate, float configtps) {
-        ControlSystem controller2 = ControlSystem.builder()
-                .velPid(new PIDCoefficients(kP, 0, 0))
-                .basicFF(new BasicFeedforwardParameters(0, 0, kS))
-                .build();
-        controller2.setGoal(new KineticState(0.0, configtps, 0.0));
-        flywheel2.setPower(-1 * (controller2.calculate(currentstate) + kF * configtps));
+    public static void velocityControlWithFeedforwardExample(double measuredTps, float targetTps) {
+        flywheel.setPower(controlPower(measuredTps, targetTps));
+    }
+
+    public static void velocityControlWithFeedforwardExample2(double measuredTps, float targetTps) {
+        flywheel2.setPower(-controlPower(measuredTps, targetTps));
     }
     public static void shooter(float tps) {
-        BindingManager.update();
         flywheelvelocity = flywheel.getVelocity();
         flywheelvelocity2 = flywheel2.getVelocity();
-        KineticState currentState = new KineticState(0, flywheelvelocity, 0.0);
-        KineticState currentState2 = new KineticState(0, -1*flywheelvelocity2, 0.0);
-        //if(tps-(-1*flywheelvelocity)<7 && tps-(-1*flywheelvelocity)>-7){
-        velocityControlWithFeedforwardExample(currentState2, tps );
-        velocityControlWithFeedforwardExample2(currentState2, tps );
+        velocityControlWithFeedforwardExample(flywheelvelocity, tps);
+        velocityControlWithFeedforwardExample2(-flywheelvelocity2, tps);
 
     }
     @Override public void initialize() {

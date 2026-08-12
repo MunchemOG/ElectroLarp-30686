@@ -1,73 +1,71 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
-import com.pedropathing.control.PIDFCoefficients;
-import com.pedropathing.control.PredictiveBrakingCoefficients;
-import com.pedropathing.follower.Follower;
-import com.pedropathing.follower.FollowerConstants;
-import com.pedropathing.ftc.FollowerBuilder;
-import com.pedropathing.ftc.drivetrains.MecanumConstants;
-import com.pedropathing.ftc.localization.constants.PinpointConstants;
-import com.pedropathing.paths.PathConstraints;
+import com.pedropathing.algorithm.Foresight;
+import com.pedropathing.algorithm.ForesightConfig;
+import com.pedropathing.controllers.Controller;
+import com.pedropathing.math.Matrix;
+import com.pedropathing.revhub.drivetrains.Mecanum;
+import com.pedropathing.revhub.drivetrains.MecanumConfig;
+import com.pedropathing.revhub.localizers.Pinpoint;
+import com.pedropathing.revhub.localizers.PinpointConfig;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-public class Constants {
-    public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(10)
-            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.18, 0.11091,0.00097587))
-            .forwardZeroPowerAcceleration(-52)
-            .lateralZeroPowerAcceleration(-83)
-            .headingPIDFCoefficients(new PIDFCoefficients(
-                    1.77,
-                    0,
-                    0.2235,
-                    0
-            ))
-            .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(
-                    0.7895,
-                    0,
-                    0.1171,
-                    0
-            ))
-            .centripetalScaling(0.000);
-    public static MecanumConstants driveConstants = new MecanumConstants()
-            .useBrakeModeInTeleOp(true)
-            .leftFrontMotorName("frontLeft")
-            .leftRearMotorName("backLeft")
-            .rightFrontMotorName("frontRight")
-            .rightRearMotorName("backRight")
-            .leftFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .leftRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .rightFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE);
-    //.xVelocity(97)
-    //.yVelocity(80);
 
-    public static PinpointConstants localizerConstants = new PinpointConstants()
-//            .forwardPodY(4.86)
-//            .strafePodX(0.84)
-            .forwardPodY(4.955)
-            .strafePodX(0.89)
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
-            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-    public static PathConstraints pathConstraints = new PathConstraints(
-            0.9,
-            0.8,
-            0.8,
-            0.5,
-            50,
-            3.5,
-            10,
-            1
+/** Pedro Pathing 3 robot configuration translated from the team's 2.1 constants. */
+public final class Constants {
+    private Constants() { }
 
-    );
+    public static final MecanumConfig driveConfig = new MecanumConfig(c -> {
+        c.frontLeftName.set("frontLeft");
+        c.backLeftName.set("backLeft");
+        c.frontRightName.set("frontRight");
+        c.backRightName.set("backRight");
+        c.frontLeftDirection.set(DcMotorSimple.Direction.FORWARD);
+        c.backLeftDirection.set(DcMotorSimple.Direction.FORWARD);
+        c.frontRightDirection.set(DcMotorSimple.Direction.REVERSE);
+        c.backRightDirection.set(DcMotorSimple.Direction.REVERSE);
+        c.manualBrakeMode.set(true);
+    });
 
-    public static Follower createFollower(HardwareMap hardwareMap) {
-        return new FollowerBuilder(followerConstants, hardwareMap)
-                .mecanumDrivetrain(driveConstants)
-                .pinpointLocalizer(localizerConstants)
-                .pathConstraints(pathConstraints)
-                .build();
+    public static final PinpointConfig localizerConfig = new PinpointConfig(c -> {
+        c.name.set("pinpoint");
+        c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+        c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        c.xPodOffset.set(4.955);
+        c.yPodOffset.set(0.89);
+        c.offsetUnits.set(DistanceUnit.INCH);
+        c.globalDistanceUnit.set(DistanceUnit.INCH);
+        c.podType.set(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+    });
+
+    public static final ForesightConfig foresightConfig = new ForesightConfig(c -> {
+        c.robotMass.set(10.0);
+        c.brakeController.set(Controller.pid(0.18, 0, 0));
+        c.headingController.set(Controller.pid(1.77, 0, 0.2235));
+        c.linearBrakeCoefficients.set(Matrix.diag(0.11091, 0.11091));
+        c.quadraticBrakeCoefficients.set(Matrix.diag(0.00097587, 0.00097587));
+        c.naturalForwardDeceleration.set(52.0);
+        c.naturalStrafeDeceleration.set(83.0);
+        c.centripetalScaling.set(0.0);
+        c.parametricTConstraint.set(0.9);
+        c.velocityConstraint.set(0.8);
+        c.translationalConstraint.set(0.8);
+        c.headingConstraint.set(0.5);
+        c.timeoutConstraint.set(50.0);
+    });
+
+    public static TeamFollower create(HardwareMap hardwareMap) {
+        return new TeamFollower(
+                new Pinpoint(hardwareMap, localizerConfig),
+                new Mecanum(hardwareMap, driveConfig),
+                new Foresight(foresightConfig),
+                foresightConfig);
+    }
+
+    public static TeamFollower createFollower(HardwareMap hardwareMap) {
+        return create(hardwareMap);
     }
 }

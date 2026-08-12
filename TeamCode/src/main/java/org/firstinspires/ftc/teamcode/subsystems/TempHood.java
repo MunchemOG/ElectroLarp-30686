@@ -1,16 +1,18 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+
+
+import com.pedropathing.ivy.Command;
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
-
-import dev.nextftc.core.commands.delays.Delay;
-import dev.nextftc.core.commands.groups.ParallelGroup;
-import dev.nextftc.core.commands.groups.SequentialGroup;
-import dev.nextftc.core.subsystems.Subsystem;
-import dev.nextftc.ftc.ActiveOpMode;
-import dev.nextftc.hardware.impl.CRServoEx;
-import dev.nextftc.hardware.powerable.SetPower;
-
 
 @Configurable
 public class TempHood implements Subsystem {
@@ -29,72 +31,72 @@ public class TempHood implements Subsystem {
 
 
 
-    public static ParallelGroup HoodRunUp=new ParallelGroup(
-            new SetPower(hoodServo1,-1),
-            new SetPower(hoodServo2,1)
+    public static Command HoodRunUp=parallel(
+            power(hoodServo1, -1),
+            power(hoodServo2, 1)
     );
 
-    public static ParallelGroup HoodPowerZero=new ParallelGroup(
-            new SetPower(hoodServo1,0),
-            new SetPower(hoodServo2,0)
+    public static Command HoodPowerZero=parallel(
+            power(hoodServo1, 0),
+            power(hoodServo2, 0)
     );
 
-    public static SequentialGroup HoodUp=new SequentialGroup(
+    public static Command HoodUp=sequential(
             HoodRunUp,
-            new Delay(0.18),
+            waitMs((0.18) * 1000.0),
             HoodPowerZero
     );
 
-    /*public SequentialGroup HoodUpMidRange=new SequentialGroup(
+    /*public Command HoodUpMidRange=sequential(
             HoodRunUp,
-            new Delay(0.05),
+            waitMs((0.05) * 1000.0),
             HoodPowerZero
     );*/
 
-    public static ParallelGroup HoodRunDown=new ParallelGroup(
-            new SetPower(hoodServo1,1),
-            new SetPower(hoodServo2,-1)
+    public static Command HoodRunDown=parallel(
+            power(hoodServo1, 1),
+            power(hoodServo2, -1)
     );
 
-    public static SequentialGroup HoodDown=new SequentialGroup(
+    public static Command HoodDown=sequential(
             HoodRunDown,
-            new Delay(0.17),
+            waitMs((0.17) * 1000.0),
             HoodPowerZero
     );
 
     public static double hoodUp(double runtime, double currentstate) {
         if(Double.isNaN(runtime)!=true){
-        ActiveOpMode.telemetry().addData("runtime", runtime);
-        ActiveOpMode.telemetry().addData("currentstate", currentstate);
-        SequentialGroup runUp = new SequentialGroup(
+        RobotContext.telemetry().addData("runtime", runtime);
+        RobotContext.telemetry().addData("currentstate", currentstate);
+        Command runUp = sequential(
                 HoodRunUp,
                 HoodRunUp,
                 HoodRunUp,
                 HoodRunUp,
-                new Delay(runtime - currentstate),
+                waitMs((runtime - currentstate) * 1000.0),
                 HoodPowerZero
         );
-        SequentialGroup runDown = new SequentialGroup(
+        Command runDown = sequential(
                 HoodRunDown,
-                new Delay(currentstate - runtime),
+                waitMs((currentstate - runtime) * 1000.0),
                 HoodPowerZero
         );
         if(runtime>currentstate+0.007) {
             runUp.schedule();
-            ActiveOpMode.telemetry().addLine("runUp");
+            RobotContext.telemetry().addLine("runUp");
             return runtime;
         }
         if(runtime<currentstate-0.007){
             runDown.schedule();
-            ActiveOpMode.telemetry().addLine("runDown");
+            RobotContext.telemetry().addLine("runDown");
             return runtime;
         }
         else{
-            ActiveOpMode.telemetry().addLine("returning0");
+            RobotContext.telemetry().addLine("returning0");
             return 0;
         }}
         else{
-            ActiveOpMode.telemetry().addLine("NaN");
+            RobotContext.telemetry().addLine("NaN");
             return 0;
         }
     }
@@ -104,8 +106,8 @@ public class TempHood implements Subsystem {
 
     @Override
     public void initialize(){
-        //hoodServo1n= ActiveOpMode.hardwareMap().get(CRServo.class, "hoodServo1");
-        //hoodServo2n=  ActiveOpMode.hardwareMap().get(CRServo.class, "hoodServo2");
+        //hoodServo1n= RobotContext.hardwareMap().get(CRServo.class, "hoodServo1");
+        //hoodServo2n=  RobotContext.hardwareMap().get(CRServo.class, "hoodServo2");
 
 
     }

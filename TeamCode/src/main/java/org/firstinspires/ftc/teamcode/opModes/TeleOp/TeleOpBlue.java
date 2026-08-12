@@ -1,35 +1,31 @@
 package org.firstinspires.ftc.teamcode.opModes.TeleOp;
 
 
+
+
+import com.pedropathing.ivy.Command;
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.DriveTrain;
 import org.firstinspires.ftc.teamcode.subsystems.TempHood;
 
-import dev.nextftc.core.components.BindingsComponent;
-import dev.nextftc.core.components.SubsystemComponent;
-import dev.nextftc.extensions.pedro.PedroComponent;
-import dev.nextftc.ftc.Gamepads;
-import dev.nextftc.ftc.NextFTCOpMode;
-import dev.nextftc.ftc.components.BulkReadComponent;
-import dev.nextftc.hardware.impl.MotorEx;
-
 @Disabled
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "TeleOpBlue")
-public class TeleOpBlue extends NextFTCOpMode {
+public class TeleOpBlue extends IvyOpMode {
 
     public MotorEx intakeMotor;
     public MotorEx transfer;
     public TeleOpBlue() {
-        addComponents(
-                new PedroComponent(Constants::createFollower),
-                new SubsystemComponent(TempHood.INSTANCE, DriveTrain.INSTANCE/*, Intake.INSTANCE, Spindexer.INSTANCE*/),
-                BulkReadComponent.INSTANCE,
-                BindingsComponent.INSTANCE
-
-
-        );
+        configurePedro(Constants::create, TempHood.INSTANCE, DriveTrain.INSTANCE/*, Intake.INSTANCE, Spindexer.INSTANCE*/);
     }
 
     public static boolean blue;
@@ -70,13 +66,13 @@ public class TeleOpBlue extends NextFTCOpMode {
         blue=true;
         intakeMotor = new MotorEx("intake").reversed();
         transfer = new MotorEx("transfer").reversed();
-        Gamepads.gamepad1().leftTrigger().greaterThan(0.3).whenBecomesTrue(()-> intakeMotor.setPower(1))
+        IvyGamepads.gamepad1().leftTrigger().greaterThan(0.3).whenBecomesTrue(()-> intakeMotor.setPower(1))
                 .whenBecomesFalse(() -> intakeMotor.setPower(0));
-        Gamepads.gamepad1().leftBumper().whenBecomesTrue(()-> transfer.setPower(1))
+        IvyGamepads.gamepad1().leftBumper().whenBecomesTrue(()-> transfer.setPower(1))
                 .whenBecomesFalse(() -> transfer.setPower(0));
-        Gamepads.gamepad2().leftTrigger().greaterThan(0.3).whenBecomesTrue(()->intakeMotor.setPower(-1))
+        IvyGamepads.gamepad2().leftTrigger().greaterThan(0.3).whenBecomesTrue(()->intakeMotor.setPower(-1))
                 .whenBecomesFalse(() -> intakeMotor.setPower(0));
-        Gamepads.gamepad2().rightTrigger().greaterThan(0.3).whenBecomesTrue(()-> transfer.setPower(-1))
+        IvyGamepads.gamepad2().rightTrigger().greaterThan(0.3).whenBecomesTrue(()-> transfer.setPower(-1))
                 .whenBecomesFalse(() -> intakeMotor.setPower(0));
 
 
@@ -89,15 +85,15 @@ public class TeleOpBlue extends NextFTCOpMode {
         float newtps=1000;
         /*if(lowerangle==true){
             newtps = findTPS44(DistanceBlue.INSTANCE.getDistanceFromTag());
-            //ActiveOpMode.telemetry().addData("Lowerangle:", lowerangle);
+            //RobotContext.telemetry().addData("Lowerangle:", lowerangle);
         }
         else if(lowerangle==false) {
             newtps = findTPS(DistanceBlue.INSTANCE.getDistanceFromTag());
-            //ActiveOpMode.telemetry().addData("Lowerangle:", lowerangle);
+            //RobotContext.telemetry().addData("Lowerangle:", lowerangle);
         }
         if (DistanceBlue.INSTANCE.getDistanceFromTag() != 0) {
             //shooter(newtps);
-            ActiveOpMode.telemetry().addData("newtps", newtps);
+            RobotContext.telemetry().addData("newtps", newtps);
         }*/
     }
 
@@ -107,19 +103,19 @@ public class TeleOpBlue extends NextFTCOpMode {
     public void onStartButtonPressed() {
 
 
-        //Gamepads.gamepad2().cross().whenBecomesTrue(() -> hood());
-        //Gamepads.gamepad2().triangle().whenBecomesTrue(() -> hoodMid());
-        /*SequentialGroup onStart= new SequentialGroup(
-                new Delay(2),
+        //IvyGamepads.gamepad2().cross().whenBecomesTrue(() -> hood());
+        //IvyGamepads.gamepad2().triangle().whenBecomesTrue(() -> hoodMid());
+        /*Command onStart= sequential(
+                waitMs((2) * 1000.0),
                 //TempHood.INSTANCE.HoodUp,
-                new SetPower(transfer, 0.25),
-                new Delay(0.01),
-                new SetPower(transfer, 0),
+                power(transfer, 0.25),
+                waitMs((0.01) * 1000.0),
+                power(transfer, 0),
                 TempHood.INSTANCE.HoodUp,
-                new SetPower(transfer, 1),
-                new Delay(0.5),
+                power(transfer, 1),
+                waitMs((0.5) * 1000.0),
                 TempHood.INSTANCE.HoodDown,
-                new SetPower(transfer, 0)
+                power(transfer, 0)
         );
         //int tag=MotifScanning.INSTANCE.findMotif();
         onStart.schedule();*/

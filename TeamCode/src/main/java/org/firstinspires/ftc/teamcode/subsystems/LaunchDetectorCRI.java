@@ -1,5 +1,14 @@
 package org.firstinspires.ftc.teamcode.subsystems;
-import com.pedropathing.geometry.Pose;
+
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
+import com.pedropathing.math.Pose;
 
 public class LaunchDetectorCRI {
 
@@ -34,9 +43,9 @@ public class LaunchDetectorCRI {
         private static final double ROBOT_LENGTH = 16.914;
 
         public static boolean isOverlappingLaunchZone(Pose robotPose) {
-            double cx = robotPose.getX();
-            double cy = robotPose.getY();
-            double heading = robotPose.getHeading();
+            double cx = robotPose.x();
+            double cy = robotPose.y();
+            double heading = robotPose.heading();
 
             // TEST 1: Absolute Subsumption Check (Is the robot's center fully inside either zone?)
             //if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy) || SMALL_LAUNCH_ZONE.containsCenter(cx, cy)) {

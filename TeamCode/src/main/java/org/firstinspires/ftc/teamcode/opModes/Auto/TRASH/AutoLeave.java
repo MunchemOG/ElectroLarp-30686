@@ -1,5 +1,16 @@
 package org.firstinspires.ftc.teamcode.opModes.Auto.TRASH;
 
+
+
+import com.pedropathing.ivy.Command;
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import static org.firstinspires.ftc.teamcode.subsystems.AutoShooterCalc.calculateShotVectorandUpdateHeading;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.openStopperPos;
@@ -7,12 +18,12 @@ import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
 import static org.firstinspires.ftc.teamcode.subsystems.LaunchDetector.isOverlappingLaunchZone;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.Vector;
-import com.pedropathing.paths.PathChain;
-import com.pedropathing.util.Timer;
+import org.firstinspires.ftc.teamcode.pedroPathing.TeamFollower;
+import org.firstinspires.ftc.teamcode.pedroPathing.BezierLine;
+import com.pedropathing.math.Pose;
+import org.firstinspires.ftc.teamcode.pedroPathing.PolarVector;
+import com.pedropathing.paths.Path;
+import org.firstinspires.ftc.teamcode.pedroPathing.Timer;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
@@ -24,39 +35,21 @@ import org.firstinspires.ftc.teamcode.subsystems.Storage;
 
 import java.util.List;
 
-import dev.nextftc.core.commands.Command;
-import dev.nextftc.core.commands.delays.Delay;
-import dev.nextftc.core.commands.groups.SequentialGroup;
-import dev.nextftc.core.commands.utility.LambdaCommand;
-import dev.nextftc.core.components.BindingsComponent;
-import dev.nextftc.extensions.pedro.FollowPath;
-import dev.nextftc.extensions.pedro.PedroComponent;
-import dev.nextftc.ftc.ActiveOpMode;
-import dev.nextftc.ftc.NextFTCOpMode;
-import dev.nextftc.ftc.components.BulkReadComponent;
-import dev.nextftc.hardware.impl.MotorEx;
-import dev.nextftc.hardware.impl.ServoEx;
-
-
 @Disabled
 @Autonomous
 @Configurable
-public class AutoLeave extends NextFTCOpMode {
+public class AutoLeave extends IvyOpMode {
 
     public AutoLeave() {
-        addComponents(
-                BulkReadComponent.INSTANCE,
-                BindingsComponent.INSTANCE,
-                new PedroComponent(hwMap -> Constants.createFollower(hwMap))
-        );
+        configurePedro(Constants::create);
     }
 
-    private Follower follower;
+    private TeamFollower follower;
     private MotorEx transfer;
     private Timer opmodeTimer;
     private Paths paths;
 
-    public Pose start = new Pose(startX, startY, Math.toRadians(90));
+    public Pose start = pose(startX, startY, Math.toRadians(90));
 
     // --- Turret tracking ---
     private ServoEx servoStopper;
@@ -98,25 +91,25 @@ public class AutoLeave extends NextFTCOpMode {
     public static double turretForwardOffset = -0.52588;
     public static double turretStrafeOffset = 0;
 
-    private Command intakeMotorOn = new LambdaCommand()
+    private Command intakeMotorOn = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(1);
                 transfer.setPower(1);
             });
 
 
-    private Command intakeMotorOff = new LambdaCommand()
+    private Command intakeMotorOff = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(0);
                 transfer.setPower(0);
             });
 
-    public Command servoOpen = new LambdaCommand()
+    public Command servoOpen = Command.build()
             .setStart(() -> {
                 servoStopper.setPosition(0.96);
             });
 
-    public Command servoClose = new LambdaCommand()
+    public Command servoClose = Command.build()
             .setStart(() -> {
                 servoStopper.setPosition(0.86);
             });
@@ -139,27 +132,27 @@ public class AutoLeave extends NextFTCOpMode {
     }
 
     private Pose getTurretPose(Pose robotPose) {
-        double heading = robotPose.getHeading();
-        double turretX = robotPose.getX()
+        double heading = robotPose.heading();
+        double turretX = robotPose.x()
                 + turretForwardOffset * Math.cos(heading)
                 - turretStrafeOffset * Math.sin(heading);
-        double turretY = robotPose.getY()
+        double turretY = robotPose.y()
                 + turretForwardOffset * Math.sin(heading)
                 + turretStrafeOffset * Math.cos(heading);
 
-        return new Pose(turretX, turretY, heading);
+        return pose(turretX, turretY, heading);
     }
 
-    private Vector getTurretToGoalVector(Pose turretPose) {
-        return new Vector(
-                turretPose.distanceFrom(new Pose(goalX, goalY)),
-                Math.atan2(goalY - turretPose.getY(), goalX - turretPose.getX())
+    private PolarVector getTurretToGoalVector(Pose turretPose) {
+        return new PolarVector(
+                turretPose.distance(pose(goalX, goalY)),
+                Math.atan2(goalY - turretPose.y(), goalX - turretPose.x())
         );
     }
 
-    //public SequentialGroup shoot = new SequentialGroup(
+    //public Command shoot = sequential(
     //servoOpen,
-    //new Delay(0.3)
+    //waitMs((0.3) * 1000.0)
     //servoClose
     //);
 
@@ -176,15 +169,15 @@ public class AutoLeave extends NextFTCOpMode {
 
 
     public Command autoShootEnable(){
-        return new LambdaCommand()
+        return Command.build()
                 .setStart(()->autoShoot = true);
     }
     public Command turnOffManualtps(){
-        return new LambdaCommand()
+        return Command.build()
                 .setStart(()->manualTPS=false);
     }
     public Command turnOffPreload(){
-        return new LambdaCommand()
+        return Command.build()
                 .setStart(()->preload=false);
     }
 
@@ -195,15 +188,15 @@ public class AutoLeave extends NextFTCOpMode {
                     isOverridden = true;
                     overriddenTurretAngle = getClosestValidTurretAngle(degrees);
                 })
-                .setIsDone(() -> true);
+                .setDone(() -> true);
     }
 
     public Command enableGoalTracking() {
-        return new LambdaCommand("Enable Goal Tracking")
+        return Command.build()
                 .setStart(() -> {
                     isOverridden = false;
                 })
-                .setIsDone(() -> true);
+                .setDone(() -> true);
     }
 
     public static MotorEx flywheel = new MotorEx("launchingmotor");
@@ -214,18 +207,18 @@ public class AutoLeave extends NextFTCOpMode {
 
     public void onInit() {
         autoShoot = false;
-        allHubs = ActiveOpMode.hardwareMap().getAll(LynxModule.class);
+        allHubs = RobotContext.hardwareMap().getAll(LynxModule.class);
         for (LynxModule hub : allHubs) {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
-        follower = PedroComponent.follower();
+        follower = PedroRuntime.follower();
         follower.setStartingPose(start);
         paths = new Paths(follower);
         opmodeTimer = new Timer();
         intakeMotor = new MotorEx("intakeMotor");
         transfer = new MotorEx("transferMotor");
-        turret1 = ActiveOpMode.hardwareMap().get(ServoImplEx.class, "turretServo1");
-        turret2 = ActiveOpMode.hardwareMap().get(ServoImplEx.class,"turretServo2");
+        turret1 = RobotContext.hardwareMap().get(ServoImplEx.class, "turretServo1");
+        turret2 = RobotContext.hardwareMap().get(ServoImplEx.class,"turretServo2");
         turret1.setPwmRange(new PwmControl.PwmRange(500, 2500));
         turret2.setPwmRange(new PwmControl.PwmRange(500, 2500));
         hoodServo = new ServoEx("hoodServo");
@@ -234,28 +227,28 @@ public class AutoLeave extends NextFTCOpMode {
         telemetry.update();
     }
     public Command turnTo(Pose targetPose, double timeoutSeconds) {
-        return new LambdaCommand("Turn to " + targetPose.getHeading())
+        return new LambdaCommand("Turn to " + targetPose.heading())
                 .setStart(() -> follower.holdPoint(targetPose))
-                .setIsDone(() -> false)
-                .raceWith(new Delay(timeoutSeconds));
+                .setDone(() -> false)
+                .raceWith(waitMs((timeoutSeconds) * 1000.0));
     }
     private boolean manualShooting = true;
 
-    public Command closeStopper = new LambdaCommand()
+    public Command closeStopper = Command.build()
             .setStart(() -> {
                 servoStopper.setPosition(closeStopperPos); // close
-            }).setIsDone(() -> true);
-    public Command openStopper = new LambdaCommand()
+            }).setDone(() -> true);
+    public Command openStopper = Command.build()
             .setStart(() -> {
                 servoStopper.setPosition(openStopperPos); // open
-            }).setIsDone(() -> true);
+            }).setDone(() -> true);
 
     public Command Auto() {
-        return new SequentialGroup(
+        return sequential(
                 enableGoalTracking(),
-                new Delay(3),
+                waitMs((3) * 1000.0),
                 autoShootEnable(),
-                new FollowPath(paths.MainChain)
+                follow(follower, paths.MainChain)
 
 
         );
@@ -282,8 +275,8 @@ public class AutoLeave extends NextFTCOpMode {
 
         Pose currPose = follower.getPose();
         Pose turretPose = getTurretPose(currPose);
-        double robotHeading = follower.getPose().getHeading();
-        Vector robotToGoalVector = getTurretToGoalVector(turretPose);
+        double robotHeading = follower.getPose().heading();
+        PolarVector robotToGoalVector = getTurretToGoalVector(turretPose);
         Double[] results = calculateShotVectorandUpdateHeading(robotHeading, robotToGoalVector, follower.getVelocity().times(1), follower.getAcceleration());
 
         flywheelSpeed = results[0];
@@ -308,7 +301,7 @@ public class AutoLeave extends NextFTCOpMode {
             // Evaluates target angle directly based on user's manual call while preserving feedforward stabilization
             targetTurretAngle = getClosestValidTurretAngle(overriddenTurretAngle - feedforwardOffset);
         } else {
-            // Default Vector Math Goal Tracking
+            // Default PolarVector Math Goal Tracking
             targetTurretAngle = getClosestValidTurretAngle(headingError + turretOffset - feedforwardOffset);
         }
 
@@ -317,7 +310,7 @@ public class AutoLeave extends NextFTCOpMode {
         turret1.setPosition(servoPositionSignal);
         turret2.setPosition(servoPositionSignal);
         currentTurretPos = targetTurretAngle;
-        Pose futurepose = new Pose(follower.getPose().getX()+follower.getVelocity().getXComponent()*0.5, follower.getPose().getY()+follower.getVelocity().getYComponent()*0.3, follower.getHeading());
+        Pose futurepose = pose(follower.getPose().x()+follower.getVelocity().getXComponent()*0.5, follower.getPose().y()+follower.getVelocity().getYComponent()*0.3, follower.heading());
 
         if(isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude()>45&&autoShoot){
             intakeMotor.setPower(1);
@@ -339,14 +332,14 @@ public class AutoLeave extends NextFTCOpMode {
 
     public class Paths {
 
-        public PathChain MainChain;
+        public Path MainChain;
 
-        public Paths(Follower follower) {
+        public Paths(TeamFollower follower) {
             MainChain = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
-                                    new Pose(79.318, 9.2),
-                                    new Pose(108.8133, 9.5)
+                                    pose(79.318, 9.2),
+                                    pose(108.8133, 9.5)
                             )
                     )
                     .setConstantHeadingInterpolation(Math.toRadians(90))

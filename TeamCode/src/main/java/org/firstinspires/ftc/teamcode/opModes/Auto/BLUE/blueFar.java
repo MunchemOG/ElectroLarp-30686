@@ -1,5 +1,19 @@
 package org.firstinspires.ftc.teamcode.opModes.Auto.BLUE;
 
+import static com.pedropathing.api.Paths.*;
+
+import com.pedropathing.api.PoseFactory;
+
+
+
+import com.pedropathing.ivy.Command;
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.opModes.Auto.AutoPathRuntime.*;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.servoOffset;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.calculateShotVectorandUpdateHeading;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopperPos;
@@ -8,13 +22,11 @@ import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
 import static org.firstinspires.ftc.teamcode.subsystems.LaunchDetector.isOverlappingLaunchZone;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.Vector;
-import com.pedropathing.paths.PathChain;
-import com.pedropathing.util.Timer;
+import org.firstinspires.ftc.teamcode.pedroPathing.TeamFollower;
+import com.pedropathing.math.Pose;
+import org.firstinspires.ftc.teamcode.pedroPathing.PolarVector;
+import com.pedropathing.paths.Path;
+import org.firstinspires.ftc.teamcode.pedroPathing.Timer;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.PwmControl;
@@ -25,33 +37,16 @@ import org.firstinspires.ftc.teamcode.subsystems.Storage;
 
 import java.util.List;
 
-import dev.nextftc.core.commands.Command;
-import dev.nextftc.core.commands.delays.Delay;
-import dev.nextftc.core.commands.groups.SequentialGroup;
-import dev.nextftc.core.commands.utility.LambdaCommand;
-import dev.nextftc.core.components.BindingsComponent;
-import dev.nextftc.extensions.pedro.FollowPath;
-import dev.nextftc.extensions.pedro.PedroComponent;
-import dev.nextftc.ftc.ActiveOpMode;
-import dev.nextftc.ftc.NextFTCOpMode;
-import dev.nextftc.ftc.components.BulkReadComponent;
-import dev.nextftc.hardware.impl.MotorEx;
-import dev.nextftc.hardware.impl.ServoEx;
-
-
 @Autonomous(name = "Blue Far V12")
 @Configurable
-public class blueFar extends NextFTCOpMode {
+public class blueFar extends IvyOpMode {
+    private static final PoseFactory POSES = PoseFactory.radians();
 
     public blueFar() {
-        addComponents(
-                BulkReadComponent.INSTANCE,
-                BindingsComponent.INSTANCE,
-                new PedroComponent(hwMap -> Constants.createFollower(hwMap))
-        );
+        configurePedro(Constants::create);
     }
 
-    private Follower follower;
+    private TeamFollower follower;
     private MotorEx transfer;
     private Timer opmodeTimer;
     private Paths paths;
@@ -61,7 +56,7 @@ public class blueFar extends NextFTCOpMode {
     public static double startX = 42;
     public static double startY = 9;
 
-    public Pose start = new Pose(startX, startY, Math.toRadians(90));
+    public Pose start = POSES.of(startX, startY, Math.toRadians(90));
 
     // --- Turret tracking ---
     private ServoEx servoStopper;
@@ -94,18 +89,18 @@ public class blueFar extends NextFTCOpMode {
     public static double turretForwardOffset = -0.52588;
     public static double turretStrafeOffset = 0;
 
-    private Command intakeMotorOn = new LambdaCommand()
+    private Command intakeMotorOn = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(1);
                 transfer.setPower(1);
             });
-    private Command farTransfer = new LambdaCommand()
+    private Command farTransfer = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(0.9);
                 transfer.setPower(0.9);
             });
 
-    private Command intakeMotorOff = new LambdaCommand()
+    private Command intakeMotorOff = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(0);
                 transfer.setPower(0);
@@ -130,26 +125,26 @@ public class blueFar extends NextFTCOpMode {
     }
 
     private Pose getTurretPose(Pose robotPose) {
-        double heading = robotPose.getHeading();
+        double heading = robotPose.heading();
 
         double cos = Math.cos(heading);
         double sin = Math.sin(heading);
 
-        double turretX = robotPose.getX()
+        double turretX = robotPose.x()
                 + turretForwardOffset * cos
                 - turretStrafeOffset * sin;
 
-        double turretY = robotPose.getY()
+        double turretY = robotPose.y()
                 + turretForwardOffset * sin
                 + turretStrafeOffset * cos;
 
-        return new Pose(turretX, turretY, heading);
+        return POSES.of(turretX, turretY, heading);
     }
 
-    private Vector getTurretToGoalVector(Pose turretPose) {
-        return new Vector(
-                turretPose.distanceFrom(new Pose(goalX, goalY)),
-                Math.atan2(goalY - turretPose.getY(), goalX - turretPose.getX())
+    private PolarVector getTurretToGoalVector(Pose turretPose) {
+        return new PolarVector(
+                turretPose.distance(POSES.of(goalX, goalY, 0)),
+                Math.atan2(goalY - turretPose.y(), goalX - turretPose.x())
         );
     }
 
@@ -164,7 +159,7 @@ public class blueFar extends NextFTCOpMode {
                     isOverridden = true;
                     overriddenTurretAngle = getClosestValidTurretAngle(degrees);
                 })
-                .setIsDone(() -> true);
+                .setDone(() -> true);
     }
 
 
@@ -173,13 +168,13 @@ public class blueFar extends NextFTCOpMode {
     @Override
     public void onInit() {
 
-        allHubs = ActiveOpMode.hardwareMap().getAll(LynxModule.class);
+        allHubs = RobotContext.hardwareMap().getAll(LynxModule.class);
 
         for (LynxModule hub : allHubs) {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
 
-        follower = PedroComponent.follower();
+        follower = PedroRuntime.follower();
 
         follower.setStartingPose(start);
 
@@ -190,11 +185,11 @@ public class blueFar extends NextFTCOpMode {
         intakeMotor = new MotorEx("intakeMotor");
         transfer = new MotorEx("transferMotor");
 
-        turret1 = ActiveOpMode.hardwareMap().get(
+        turret1 = RobotContext.hardwareMap().get(
                 ServoImplEx.class,
                 "turretServo1");
 
-        turret2 = ActiveOpMode.hardwareMap().get(
+        turret2 = RobotContext.hardwareMap().get(
                 ServoImplEx.class,
                 "turretServo2");
 
@@ -229,87 +224,87 @@ public class blueFar extends NextFTCOpMode {
         telemetry.update();
     }
 
-    public Command closeStopper = new LambdaCommand()
+    public Command closeStopper = Command.build()
             .setStart(() -> {
                 servoStopper.setPosition(closeStopperPos); // close
-            }).setIsDone(() -> true);
+            }).setDone(() -> true);
 
 
-    public Command openStopper = new LambdaCommand()
+    public Command openStopper = Command.build()
             .setStart(() -> {
                 servoStopper.setPosition(openStopperPos); // open
-            }).setIsDone(() -> true);
+            }).setDone(() -> true);
 
     public Command enableGoalTracking() {
-        return new LambdaCommand("Enable Goal Tracking")
+        return Command.build()
                 .setStart(() -> {
                     isOverridden = false;
                 })
-                .setIsDone(() -> true);
+                .setDone(() -> true);
     }
-    private SequentialGroup shoot = new SequentialGroup(
-            new Delay(0.3),
+    private Command shoot = sequential(
+            waitMs((0.3) * 1000.0),
             openStopper,
             farTransfer,
-            new Delay(0.4),
+            waitMs((0.4) * 1000.0),
             intakeMotorOff,
             closeStopper);
 
 
 
     public Command Auto() {
-        return new SequentialGroup(
+        return sequential(
                 disablePreload,
-                new Delay(2.5),
+                waitMs((2.5) * 1000.0),
                 // Preload shot happens from the start pose — FarAuto.shootPreloads() never
                 // drives before shooting, so there's no leading FollowPath here (unlike
                 // blue24Near's FollowPath(paths.Preload,...)).
                 shoot,
                 intakeMotorOn,
                 // --- Spike 1 cycle ---
-                new FollowPath(paths.intakeSpike1, true, 1.0),
-                new Delay(0.3),
-                new FollowPath(paths.shootSpike1, true, 1.0),
+                follow(follower, paths.intakeSpike1, true, 1.0),
+                waitMs((0.3) * 1000.0),
+                follow(follower, paths.shootSpike1, true, 1.0),
                 shoot,
                 intakeMotorOn,
                 // --- Spike 2 cycle ---
-                new FollowPath(paths.intakeSpike2, true, 1.0),
-                new Delay(0.3),
-                new FollowPath(paths.shootSpike2, true, 1.0),
+                follow(follower, paths.intakeSpike2, true, 1.0),
+                waitMs((0.3) * 1000.0),
+                follow(follower, paths.shootSpike2, true, 1.0),
                 shoot,
                 intakeMotorOn,
                 // --- Sweep cycle 1 ---
-                new FollowPath(paths.intakeSweepHP1, true, 1.0),
-                new Delay(0.3),
-                new FollowPath(paths.sweepAndShoot1, true, 1.0),
+                follow(follower, paths.intakeSweepHP1, true, 1.0),
+                waitMs((0.3) * 1000.0),
+                follow(follower, paths.sweepAndShoot1, true, 1.0),
                 shoot,
                 intakeMotorOn,
                 // --- Sweep cycle 2 ---
-                new FollowPath(paths.intakeSweepHP2, true, 1.0),
-                new Delay(0.3),
-                new FollowPath(paths.sweepAndShoot2, true, 1.0),
+                follow(follower, paths.intakeSweepHP2, true, 1.0),
+                waitMs((0.3) * 1000.0),
+                follow(follower, paths.sweepAndShoot2, true, 1.0),
                 shoot,
                 intakeMotorOn,
                 // --- Sweep cycle 3 ---
-                new FollowPath(paths.intakeSweepHP3, true, 1.0),
-                new Delay(0.3),
-                new FollowPath(paths.sweepAndShoot3, true, 1.0),
+                follow(follower, paths.intakeSweepHP3, true, 1.0),
+                waitMs((0.3) * 1000.0),
+                follow(follower, paths.sweepAndShoot3, true, 1.0),
                 shoot,
                 intakeMotorOn,
                 // --- Sweep cycle 4 ---
-                new FollowPath(paths.intakeSweepHP4, true, 1.0),
-                new Delay(0.3),
-                new FollowPath(paths.sweepAndShoot4, true, 1.0),
+                follow(follower, paths.intakeSweepHP4, true, 1.0),
+                waitMs((0.3) * 1000.0),
+                follow(follower, paths.sweepAndShoot4, true, 1.0),
                 shoot,
 //                intakeMotorOn,
 //                // --- Sweep cycle 5 ---
-//                new FollowPath(paths.intakeSweepHP5, true, 1.0),
-//                new Delay(0.3),
-//                new FollowPath(paths.sweepAndShoot5, true, 1.0),
+//                follow(follower, paths.intakeSweepHP5, true, 1.0),
+//                waitMs((0.3) * 1000.0),
+//                follow(follower, paths.sweepAndShoot5, true, 1.0),
 
                 // No 6th sweep set exists in Paths — see earlier note.
 
-                new FollowPath(paths.park, true, 1.0)
+                follow(follower, paths.park, true, 1.0)
         );
     }
 
@@ -321,7 +316,7 @@ public class blueFar extends NextFTCOpMode {
 
     private boolean preload = true;
 
-    public Command disablePreload = new LambdaCommand()
+    public Command disablePreload = Command.build()
             .setStart(() -> preload = false);
     private double flywheelSpeed;
 
@@ -342,9 +337,9 @@ public class blueFar extends NextFTCOpMode {
 
         Pose turretPose = getTurretPose(currPose);
 
-        double robotHeading = follower.getPose().getHeading();
+        double robotHeading = follower.getPose().heading();
 
-        Vector robotToGoalVector = getTurretToGoalVector(turretPose);
+        PolarVector robotToGoalVector = getTurretToGoalVector(turretPose);
 
         Double[] results = calculateShotVectorandUpdateHeading(
                 robotHeading,
@@ -405,74 +400,63 @@ public class blueFar extends NextFTCOpMode {
 
     public class Paths {
 
-        public PathChain intakeSpike1;
-        public PathChain shootSpike1;
-        public PathChain intakeSpike2;
-        public PathChain shootSpike2;
+        public Path intakeSpike1;
+        public Path shootSpike1;
+        public Path intakeSpike2;
+        public Path shootSpike2;
 
-        public PathChain intakeSweepHP1;
-        public PathChain hpToShoot1;
-        public PathChain sweepAndShoot1;
+        public Path intakeSweepHP1;
+        public Path hpToShoot1;
+        public Path sweepAndShoot1;
 
-        public PathChain intakeSweepHP2;
-        public PathChain hpToShoot2;
-        public PathChain sweepAndShoot2;
+        public Path intakeSweepHP2;
+        public Path hpToShoot2;
+        public Path sweepAndShoot2;
 
-        public PathChain intakeSweepHP3;
-        public PathChain hpToShoot3;
-        public PathChain sweepAndShoot3;
+        public Path intakeSweepHP3;
+        public Path hpToShoot3;
+        public Path sweepAndShoot3;
 
-        public PathChain intakeSweepHP4;
-        public PathChain hpToShoot4;
-        public PathChain sweepAndShoot4;
+        public Path intakeSweepHP4;
+        public Path hpToShoot4;
+        public Path sweepAndShoot4;
 
-        public PathChain intakeSweepHP5;
-        public PathChain hpToShoot5;
-        public PathChain sweepAndShoot5;
+        public Path intakeSweepHP5;
+        public Path hpToShoot5;
+        public Path sweepAndShoot5;
 
-        public PathChain park;
+        public Path park;
 
         // Raw blue-alliance poses, copied directly from FarAutoPathsMTI's ColoredDecodePose
         // (blue is unmirrored so lowk wont goon).
 
 
         //====Change these only para paths egg=================
-        Pose FIRST_SPIKE = new Pose(23.5, 30, Math.toRadians(90));
-        Pose FIRST_SPIKE_CONTROL = new Pose(23.5, 16);
-        Pose FIRST_SHOOT = new Pose(46, 11.5);
-        Pose FIRST_SHOOT_CONTROL = new Pose(23.5, 16);
-        Pose SECOND_SPIKE = new Pose(11.5, 12, Math.toRadians(180));
-        Pose SECOND_SHOOT = new Pose(47.5, 14);
-        Pose SWEEP_1 = new Pose(11.5, 10, Math.toRadians(180));
-        Pose SWEEP_2 = new Pose(12, 14.5, Math.toRadians(120));
-        Pose SWEEP_2_CONTROL = new Pose(16.7, 11.8);
-        Pose SWEEP_3 = new Pose(12, 34.5, Math.toRadians(120));
-        Pose SWEEP_SHOOT = new Pose(57.5, 17.5);
-        Pose PARK_POSE = new Pose(48, 21);
+        Pose FIRST_SPIKE = POSES.of(23.5, 30, Math.toRadians(90));
+        Pose FIRST_SPIKE_CONTROL = POSES.of(23.5, 16, 0);
+        Pose FIRST_SHOOT = POSES.of(46, 11.5, 0);
+        Pose FIRST_SHOOT_CONTROL = POSES.of(23.5, 16, 0);
+        Pose SECOND_SPIKE = POSES.of(11.5, 12, Math.toRadians(180));
+        Pose SECOND_SHOOT = POSES.of(47.5, 14, 0);
+        Pose SWEEP_1 = POSES.of(11.5, 10, Math.toRadians(180));
+        Pose SWEEP_2 = POSES.of(12, 14.5, Math.toRadians(120));
+        Pose SWEEP_2_CONTROL = POSES.of(16.7, 11.8, 0);
+        Pose SWEEP_3 = POSES.of(12, 34.5, Math.toRadians(120));
+        Pose SWEEP_SHOOT = POSES.of(57.5, 17.5, 0);
+        Pose PARK_POSE = POSES.of(48, 21, 0);
 
-        public Paths(Follower follower) {
+        public Paths(TeamFollower follower) {
 
-            intakeSpike1 = follower.pathBuilder()
-                    .addPath(new BezierCurve(start, FIRST_SPIKE_CONTROL, FIRST_SPIKE))
-                    .setConstantHeadingInterpolation(FIRST_SPIKE.getHeading())
-                    .build();
+            intakeSpike1 = curve(start, FIRST_SPIKE_CONTROL, FIRST_SPIKE).constant(FIRST_SPIKE.heading());
 
-            shootSpike1 = follower.pathBuilder()
-                    .addPath(new BezierCurve(FIRST_SPIKE, FIRST_SHOOT_CONTROL, FIRST_SHOOT))
-                    .setTangentHeadingInterpolation()
-                    .setReversed()
-                    .build();
+            shootSpike1 = curve(FIRST_SPIKE, FIRST_SHOOT_CONTROL, FIRST_SHOOT).reverseTangent();
 
-            intakeSpike2 = follower.pathBuilder()
-                    .addPath(new BezierLine(FIRST_SHOOT, SECOND_SPIKE))
-                    .setConstantHeadingInterpolation(SECOND_SPIKE.getHeading())
-                    .build();
+            intakeSpike2 = line(FIRST_SHOOT, SECOND_SPIKE).constant(SECOND_SPIKE.heading());
 
-            shootSpike2 = follower.pathBuilder()
-                    .addPath(new BezierLine(SECOND_SPIKE, SECOND_SHOOT))
-                    .setConstantHeadingInterpolation(SECOND_SPIKE.getHeading())
-                    .addTemporalCallback(150, intakeMotorOff)
-                    .build();
+            shootSpike2 = withCallbacks(
+line(SECOND_SPIKE, SECOND_SHOOT).constant(SECOND_SPIKE.heading()),
+temporalCallback(150, intakeMotorOff)
+);
 
             //js goon cycle sweep
             intakeSweepHP1 = buildIntakeSweepHP(follower);
@@ -495,38 +479,29 @@ public class blueFar extends NextFTCOpMode {
             hpToShoot5 = buildHpToShoot(follower);
             sweepAndShoot5 = buildSweepAndShoot(follower);
 
-            park = follower.pathBuilder()
-                    .addPath(new BezierLine(SWEEP_SHOOT, PARK_POSE))
-                    .setTangentHeadingInterpolation()
-                    .build();
+            park = line(SWEEP_SHOOT, PARK_POSE).tangent();
         }
 
-        private PathChain buildIntakeSweepHP(Follower follower) {
-            return follower.pathBuilder()
-                    .addPath(new BezierLine(SECOND_SHOOT, SWEEP_1))
-                    .setConstantHeadingInterpolation(SECOND_SPIKE.getHeading())
-                    .build();
+        private Path buildIntakeSweepHP(TeamFollower follower) {
+            return line(SECOND_SHOOT, SWEEP_1).constant(SECOND_SPIKE.heading());
         }
 
-        private PathChain buildHpToShoot(Follower follower) {
-            return follower.pathBuilder()
-                    .addPath(new BezierLine(SWEEP_1, SECOND_SHOOT))
-                    .setConstantHeadingInterpolation(SECOND_SPIKE.getHeading())
-                    .addTemporalCallback(150, intakeMotorOff)
-                    .build();
+        private Path buildHpToShoot(TeamFollower follower) {
+            return withCallbacks(
+line(SWEEP_1, SECOND_SHOOT).constant(SECOND_SPIKE.heading()),
+temporalCallback(150, intakeMotorOff)
+);
         }
 
-        private PathChain buildSweepAndShoot(Follower follower) {
-            return follower.pathBuilder()
-                    .addPath(new BezierCurve(SWEEP_1, SWEEP_2_CONTROL, SWEEP_2))
-                    .setLinearHeadingInterpolation(SWEEP_1.getHeading(), SWEEP_2.getHeading())
-                    .addPath(new BezierLine(SWEEP_2, SWEEP_3))
-                    .setConstantHeadingInterpolation(SWEEP_2.getHeading())
-                    .addTemporalCallback(150, intakeMotorOff)
-                    .addPath(new BezierLine(SWEEP_3, SWEEP_SHOOT))
-                    .setTangentHeadingInterpolation()
-                    .setReversed()
-                    .build();
+        private Path buildSweepAndShoot(TeamFollower follower) {
+            return withCallbacks(
+path(
+curve(SWEEP_1, SWEEP_2_CONTROL, SWEEP_2).linear(SWEEP_1.heading(), SWEEP_2.heading()),
+line(SWEEP_2, SWEEP_3).constant(SWEEP_2.heading()),
+line(SWEEP_3, SWEEP_SHOOT).reverseTangent()
+),
+temporalCallback(150, intakeMotorOff)
+);
         }
     }
 }

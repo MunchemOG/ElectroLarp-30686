@@ -1,17 +1,22 @@
 package org.firstinspires.ftc.teamcode.opModes.TeleOp;
 
+
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 
-import dev.nextftc.ftc.NextFTCOpMode;
-import dev.nextftc.hardware.impl.MotorEx;
-import dev.nextftc.hardware.impl.ServoEx;
-
 @Configurable
 @com.qualcomm.robotcore.eventloop.opmode.TeleOp(name = "Flywheel Test")
-public class FlywheelTest extends NextFTCOpMode {
+public class FlywheelTest extends IvyOpMode {
     public FlywheelTest() {
     }
     public static float flywheelspeed = 800;

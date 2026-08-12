@@ -1,14 +1,22 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+
+
+import com.pedropathing.ivy.Command;
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterConstants.SCORE_ANGLE;
 import static java.lang.Double.isNaN;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.math.MathFunctions;
-import com.pedropathing.math.Vector;
-
-import dev.nextftc.core.subsystems.Subsystem;
-import dev.nextftc.ftc.ActiveOpMode;
+import org.firstinspires.ftc.teamcode.pedroPathing.MathFunctions;
+import org.firstinspires.ftc.teamcode.pedroPathing.PolarVector;
 
 /**
  * Shoot-on-the-move solver.
@@ -356,7 +364,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
      * @return {requiredTPS, hoodServoPosition, turretHeadingErrorDegrees}
      */
     public static Double[] calculateShotVectorandUpdateHeading(
-            double robotHeading, Vector robotToGoalVector, Vector robotVel, Vector robotAccel) {
+            double robotHeading, PolarVector robotToGoalVector, PolarVector robotVel, PolarVector robotAccel) {
         return calculateShotVectorandUpdateHeading(
                 robotHeading, robotToGoalVector, robotVel, robotAccel, 0.0);
     }
@@ -369,8 +377,8 @@ public class ShooterCalcAccelClaude implements Subsystem {
      *                             unavailable; turning compensation is skipped.
      */
     public static Double[] calculateShotVectorandUpdateHeading(
-            double robotHeading, Vector robotToGoalVector, Vector robotVel,
-            Vector robotAccel, double robotAngularVelocity) {
+            double robotHeading, PolarVector robotToGoalVector, PolarVector robotVel,
+            PolarVector robotAccel, double robotAngularVelocity) {
 
         double x = robotToGoalVector.getMagnitude() - ShooterConstants.PASS_THROUGH_POINT_RADIUS;
         if (x < 1.0) x = 1.0;
@@ -631,20 +639,20 @@ public class ShooterCalcAccelClaude implements Subsystem {
         double hoodTime = (0.01625 * hoodDegrees) - 0.6;
         if (isNaN(hoodTime)) hoodTime = 0.0;
 
-        ActiveOpMode.telemetry().addData("range (now)", x);
-        ActiveOpMode.telemetry().addData("range (projected)", projectedRange);
-        ActiveOpMode.telemetry().addData("range (virtual)", virtualRange);
-        ActiveOpMode.telemetry().addData("speed now / projected",
+        RobotContext.telemetry().addData("range (now)", x);
+        RobotContext.telemetry().addData("range (projected)", projectedRange);
+        RobotContext.telemetry().addData("range (virtual)", virtualRange);
+        RobotContext.telemetry().addData("speed now / projected",
                 currentSpeed + " / " + projectedSpeed);
-        ActiveOpMode.telemetry().addData("flightTime", tf);
-        ActiveOpMode.telemetry().addData("solver iters / converged",
+        RobotContext.telemetry().addData("flightTime", tf);
+        RobotContext.telemetry().addData("solver iters / converged",
                 iterations + " / " + converged);
-        ActiveOpMode.telemetry().addData("aAlongV (filt)", filteredAlongTrackAccel);
-        ActiveOpMode.telemetry().addData("revAmpedActive", revAmpedActive);
-        ActiveOpMode.telemetry().addData("revAmpedMode", revAmpedMode);
-        ActiveOpMode.telemetry().addData("projMode", projectionMode);
-        ActiveOpMode.telemetry().addData("sotmActive", sotmActive);
-        ActiveOpMode.telemetry().addData("headingAngle", headingAngle);
+        RobotContext.telemetry().addData("aAlongV (filt)", filteredAlongTrackAccel);
+        RobotContext.telemetry().addData("revAmpedActive", revAmpedActive);
+        RobotContext.telemetry().addData("revAmpedMode", revAmpedMode);
+        RobotContext.telemetry().addData("projMode", projectionMode);
+        RobotContext.telemetry().addData("sotmActive", sotmActive);
+        RobotContext.telemetry().addData("headingAngle", headingAngle);
 
         return new Double[]{tps, hoodTime, headingAngle};
     }

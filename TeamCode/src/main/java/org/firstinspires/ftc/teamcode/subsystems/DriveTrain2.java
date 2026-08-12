@@ -1,16 +1,26 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+
+
+import com.pedropathing.ivy.Command;
+import org.firstinspires.ftc.teamcode.ivy.*;
+import org.firstinspires.ftc.teamcode.pedroPathing.*;
+
+import static com.pedropathing.ivy.commands.Commands.*;
+import static com.pedropathing.ivy.groups.Groups.*;
+import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.IvyPedroCommands.*;
+import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 import static org.firstinspires.ftc.teamcode.opModes.TeleOp.TeleOpBlue2.isBlue;
 import static org.firstinspires.ftc.teamcode.opModes.TeleOp.TeleOpRed2.isRed;
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
 import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
 import static org.firstinspires.ftc.teamcode.subsystems.LaunchDetector.isOverlappingLaunchZone;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.calculateShotVectorandUpdateHeading;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.requiredTPS;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.Vector;
+import com.pedropathing.math.Pose;
+import org.firstinspires.ftc.teamcode.pedroPathing.PolarVector;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
@@ -20,24 +30,6 @@ import com.qualcomm.robotcore.util.Range;
 import java.io.FileWriter;
 import java.util.List;
 import java.util.function.Supplier;
-
-import dev.nextftc.core.commands.Command;
-import dev.nextftc.core.commands.delays.Delay;
-import dev.nextftc.core.commands.groups.ParallelGroup;
-import dev.nextftc.core.commands.groups.SequentialGroup;
-import dev.nextftc.core.commands.utility.LambdaCommand;
-import dev.nextftc.core.subsystems.Subsystem;
-import dev.nextftc.core.units.Angle;
-import dev.nextftc.extensions.pedro.PedroComponent;
-import dev.nextftc.ftc.ActiveOpMode;
-import dev.nextftc.ftc.Gamepads;
-import dev.nextftc.hardware.driving.FieldCentric;
-import dev.nextftc.hardware.driving.MecanumDriverControlled;
-import dev.nextftc.hardware.impl.Direction;
-import dev.nextftc.hardware.impl.IMUEx;
-import dev.nextftc.hardware.impl.MotorEx;
-import dev.nextftc.hardware.impl.ServoEx;
-
 
 @Configurable
 public class DriveTrain2 implements Subsystem {
@@ -50,7 +42,7 @@ public class DriveTrain2 implements Subsystem {
 
     public static MotorEx fL, fR, bL, bR;
 
-    private IMUEx imu;
+    private TeamFollower follower;
     public static double tolarance = 10;
     public double currentMotorSpeed = 0;
 
@@ -143,7 +135,7 @@ public class DriveTrain2 implements Subsystem {
 
     public static double openStopperPos = 0;
     public static double closeStopperPos = 0.045;
-    public Command driveToGate = new LambdaCommand()
+    public Command driveToGate = Command.build()
             .setStart(() -> dToGate = true);
     public static boolean dToGate = false;
     // Loop time tracking
@@ -173,22 +165,11 @@ public class DriveTrain2 implements Subsystem {
     public Command getDefaultCommand() {
 
         configureAllianceTarget();
-        follower.update();
-        currPose = follower.getPose();
-        {
-            return new MecanumDriverControlled(
-                    fL,
-                    fR,
-                    bL,
-                    bR,
-                    Gamepads.gamepad1().leftStickY().map(it -> alliance * it),
-                    Gamepads.gamepad1().leftStickX().map(it ->-1* alliance * it),
-                    Gamepads.gamepad1().rightStickX().map(it -> rotationCommand(it)),
-                    new FieldCentric(() -> Angle.fromRad(follower.getHeading() ))
-            );
-        }
-
-        //return null;
+        return infinite(() -> follower.manual(
+                alliance * IvyGamepads.gamepad1().leftStickY().getAsDouble(),
+                -alliance * IvyGamepads.gamepad1().leftStickX().getAsDouble(),
+                rotationCommand(IvyGamepads.gamepad1().rightStickX().getAsDouble())
+        )).requiring(this);
     }
 
     public static MotorEx intakeMotor;
@@ -286,26 +267,26 @@ public class DriveTrain2 implements Subsystem {
     }
 
     private Pose getTurretPose(Pose robotPose) {
-        double heading = robotPose.getHeading();
+        double heading = robotPose.heading();
 
         double cos = Math.cos(heading);
         double sin = Math.sin(heading);
 
-        double turretX = robotPose.getX()
+        double turretX = robotPose.x()
                 + turretForwardOffset * cos
                 - turretStrafeOffset * sin;
 
-        double turretY = robotPose.getY()
+        double turretY = robotPose.y()
                 + turretForwardOffset * sin
                 + turretStrafeOffset * cos;
 
-        return new Pose(turretX, turretY, heading);
+        return pose(turretX, turretY, heading);
     }
 
-    private Vector getTurretToGoalVector(Pose turretPose) {
-        return new Vector(
-                turretPose.distanceFrom(new Pose(goalX, goalY)),
-                Math.atan2(goalY - turretPose.getY(), goalX - turretPose.getX())
+    private PolarVector getTurretToGoalVector(Pose turretPose) {
+        return new PolarVector(
+                turretPose.distance(pose(goalX, goalY)),
+                Math.atan2(goalY - turretPose.y(), goalX - turretPose.x())
         );
     }
 
@@ -327,7 +308,7 @@ public class DriveTrain2 implements Subsystem {
         headingLockActive = true;
 
         double targetDeg = (alliance == -1) ? headingLockRedDeg : headingLockBlueDeg;
-        double currentDeg = Math.toDegrees(follower.getPose().getHeading());
+        double currentDeg = Math.toDegrees(follower.getPose().heading());
 
         // IEEEremainder wraps the error into [-180, 180], so the robot always
         // turns the short way round.
@@ -355,20 +336,20 @@ public class DriveTrain2 implements Subsystem {
             goalXDist = 3;
             goalX = 3;
         } else {
-            ActiveOpMode.telemetry().addLine("No direction set");
+            RobotContext.telemetry().addLine("No direction set");
         }
     }
 
 
 
-    public static Command closeStopper = new LambdaCommand()
+    public static Command closeStopper = Command.build()
             .setStart(() -> {
                 stopperServo.setPosition(closeStopperPos); // close
-            }).setIsDone(() -> true);
-    public static Command openStopper = new LambdaCommand()
+            }).setDone(() -> true);
+    public static Command openStopper = Command.build()
             .setStart(() -> {
                 stopperServo.setPosition(openStopperPos); // open
-            }).setIsDone(() -> true);
+            }).setDone(() -> true);
 
 
     @Override
@@ -383,7 +364,7 @@ public class DriveTrain2 implements Subsystem {
         lastAppliedOffset = Double.NaN;
 
         shooting = false;
-        follower = PedroComponent.follower();
+        follower = PedroRuntime.follower();
         intakeMotor = new MotorEx("intakeMotor");
         transfer = new MotorEx("transferMotor");
         fL = new MotorEx("frontLeft");
@@ -395,34 +376,33 @@ public class DriveTrain2 implements Subsystem {
         stopperServo = new ServoEx("stopperServo");
 
         // OPTIMIZATION: Cache LynxModules once during initialization
-        allHubs = ActiveOpMode.hardwareMap().getAll(LynxModule.class);
+        allHubs = RobotContext.hardwareMap().getAll(LynxModule.class);
         for (LynxModule hub : allHubs) {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
 
         closeStopper.schedule();
         configureAllianceTarget();
-        imu = new IMUEx("imu", Direction.LEFT, Direction.BACKWARD).zeroed();
-        Pose startingpose = new Pose(72, 72, Math.toRadians(90));
+        Pose startingpose = pose(72, 72, Math.toRadians(90));
         if(Storage.setPose){
             startingpose = Storage.currentPose;
             Storage.setPose=false;
         }
         follower.setStartingPose(startingpose);
-        follower.setHeading(startingpose.getHeading());
+        follower.setHeading(startingpose.heading());
 
         if (alliance == -1) {
-            localize = new LambdaCommand()
-                    .setStart(() -> follower.setPose(new Pose(128, 86, Math.toRadians(90))));
+            localize = Command.build()
+                    .setStart(() -> follower.setPose(pose(128, 86, Math.toRadians(90))));
 
         }
         if (alliance == 1) {
-            localize = new LambdaCommand()
-                    .setStart(() -> follower.setPose(new Pose(16, 86, Math.toRadians(90))));
+            localize = Command.build()
+                    .setStart(() -> follower.setPose(pose(16, 86, Math.toRadians(90))));
 
         }
-        turret1 = ActiveOpMode.hardwareMap().get(ServoImplEx.class, "turretServo1");
-        turret2 = ActiveOpMode.hardwareMap().get(ServoImplEx.class,"turretServo2");
+        turret1 = RobotContext.hardwareMap().get(ServoImplEx.class, "turretServo1");
+        turret2 = RobotContext.hardwareMap().get(ServoImplEx.class,"turretServo2");
         turret1.setPwmRange(new PwmControl.PwmRange(500, 2500));
         turret2.setPwmRange(new PwmControl.PwmRange(500, 2500));
         follower.update();
@@ -434,13 +414,13 @@ public class DriveTrain2 implements Subsystem {
         } catch (IOException e) {
             writer = null;   // log to telemetry only; opmode still drives
         }
-        ActiveOpMode.telemetry().addData("logger", writer != null ? "ready" : "FILE FAILED");
-        ActiveOpMode.telemetry().update();*/
+        RobotContext.telemetry().addData("logger", writer != null ? "ready" : "FILE FAILED");
+        RobotContext.telemetry().update();*/
 
     }
     private boolean autoShoot = true;
 
-    public Command toggleAutoShoot = new LambdaCommand()
+    public Command toggleAutoShoot = Command.build()
             .setStart(()->{
                 if(autoShoot){
                     autoShoot = false;
@@ -458,22 +438,22 @@ public class DriveTrain2 implements Subsystem {
 
 
     static boolean shooting = false;
-    Command dToGateFalse = new LambdaCommand()
+    Command dToGateFalse = Command.build()
             .setStart(() -> dToGate = false);
 
-    static Command shootFalse = new LambdaCommand()
+    static Command shootFalse = Command.build()
             .setStart(() -> shooting = false);
 
-    Command shooterer = new LambdaCommand()
+    Command shooterer = Command.build()
             .setStart(() -> shoot());
-    private static Command intakeMotorOn = new LambdaCommand()
+    private static Command intakeMotorOn = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(1);
                 transfer.setPower(1);
             });
 
 
-    private static Command intakeMotorOff = new LambdaCommand()
+    private static Command intakeMotorOff = Command.build()
             .setStart(() -> {
                 intakeMotor.setPower(0);
                 transfer.setPower(0);
@@ -489,7 +469,7 @@ public class DriveTrain2 implements Subsystem {
     public static void shoot() {
         if (shooting == false) {
             shooting = true;
-            SequentialGroup shoot = new SequentialGroup(openStopper, intakeMotorOn, new Delay(0.3), intakeMotorOff, closeStopper, shootFalse);
+            Command shoot = sequential(openStopper, intakeMotorOn, waitMs((0.3) * 1000.0), intakeMotorOff, closeStopper, shootFalse);
             shoot.schedule();
         }
     }
@@ -510,10 +490,10 @@ public class DriveTrain2 implements Subsystem {
 
 
         double t = (System.nanoTime() - t0) / 1e9;
-        double speed = PedroComponent.follower().getVelocity().getMagnitude();
+        double speed = PedroRuntime.follower().getVelocity().getMagnitude();
         double aRaw = ShooterCalcAccelClaude.lastAlongTrackAccelRaw;
         double aFilt = ShooterCalcAccelClaude.lastAlongTrackAccel;
-        double omega = PedroComponent.follower().getAngularVelocity();
+        double omega = PedroRuntime.follower().getAngularVelocity();
 
         long now = System.nanoTime();
         double loopMs = lastLoopNanos == 0 ? 0 : (now - lastLoopNanos) / 1e6;
@@ -536,8 +516,8 @@ public class DriveTrain2 implements Subsystem {
                         ShooterCalcAccelClaude.lastFlightTime,
                         ShooterCalcAccelClaude.requiredTPS,
                         lastHoodAngle,
-                        follower.getPose().getX(), follower.getPose().getY(),
-                        follower.getPose().getHeading(),
+                        follower.getPose().x(), follower.getPose().y(),
+                        follower.getPose().heading(),
                         vbat, wrapping ? 1 : 0));
                 if (++linesSinceFlush >= 20) {   // survive a crash or E-stop
                     writer.flush();
@@ -546,10 +526,10 @@ public class DriveTrain2 implements Subsystem {
             } catch (IOException ignored) { }
         }*/
 
-        ActiveOpMode.telemetry().addData("t", "%.1f s", t);
-        ActiveOpMode.telemetry().addData("speed", "%.1f", speed);
-        ActiveOpMode.telemetry().addData("aRaw", "%.0f", aRaw);
-        ActiveOpMode.telemetry().addData("aFilt", "%.0f", aFilt);
+        RobotContext.telemetry().addData("t", "%.1f s", t);
+        RobotContext.telemetry().addData("speed", "%.1f", speed);
+        RobotContext.telemetry().addData("aRaw", "%.0f", aRaw);
+        RobotContext.telemetry().addData("aFilt", "%.0f", aFilt);
 
         long currentTime = System.nanoTime();
         if (lastLoopTime != 0) {
@@ -561,12 +541,12 @@ public class DriveTrain2 implements Subsystem {
 
         if (firsttime == true) {
             // Schedule the command stored in the localize variable
-            Gamepads.gamepad1().rightBumper().whenBecomesTrue(()->openStopper.schedule())
+            IvyGamepads.gamepad1().rightBumper().whenBecomesTrue(()->openStopper.schedule())
                     .whenBecomesFalse(()->closeStopper.schedule());
-            Gamepads.gamepad1().rightTrigger().greaterThan(0.3).whenBecomesTrue(shooterer);
+            IvyGamepads.gamepad1().rightTrigger().greaterThan(0.3).whenBecomesTrue(shooterer);
             // Heading lock is HELD, not toggled - same shape as the stopper
             // binding above, just setting a flag instead of scheduling.
-            Gamepads.gamepad1().leftBumper()
+            IvyGamepads.gamepad1().leftBumper()
                     .whenBecomesTrue(() -> { headingLockHeld = true; })
                     .whenBecomesFalse(() -> { headingLockHeld = false; });
 
@@ -583,10 +563,10 @@ public class DriveTrain2 implements Subsystem {
             //
             // One binding now, with the alliance read when it FIRES rather than
             // when it is registered.
-            Gamepads.gamepad1().x().whenBecomesTrue(() -> {
+            IvyGamepads.gamepad1().x().whenBecomesTrue(() -> {
                 Pose relocalizePose = (alliance == 1)
-                        ? new Pose(14.6, 77.5, Math.toRadians(90))
-                        : new Pose(127.4, 77.5, Math.toRadians(90));
+                        ? pose(14.6, 77.5, Math.toRadians(90))
+                        : pose(127.4, 77.5, Math.toRadians(90));
                 follower.setPose(relocalizePose);
             });
 
@@ -596,12 +576,12 @@ public class DriveTrain2 implements Subsystem {
 
 
         Pose currPose = follower.getPose();
-        Vector velocity = follower.getVelocity();
+        PolarVector velocity = follower.getVelocity();
 
 
         Pose turretPose = getTurretPose(currPose);
-        double robotHeading = currPose.getHeading();
-        Vector robotToGoalVector = getTurretToGoalVector(turretPose);
+        double robotHeading = currPose.heading();
+        PolarVector robotToGoalVector = getTurretToGoalVector(turretPose);
 
         double robotAngularVelocityRads = follower.getAngularVelocity();
         if (Double.isNaN(robotAngularVelocityRads)) robotAngularVelocityRads = 0.0;
@@ -686,15 +666,15 @@ public class DriveTrain2 implements Subsystem {
                     || offsetChanged
                     || Math.abs(servoPositionSignal - lastServoPos) > turretServoThreshold) {
                 double finalServoPositionSignal = servoPositionSignal;
-                Command turretServo1Update = new LambdaCommand()
+                Command turretServo1Update = Command.build()
                         .setStart(() -> {
                             turret1.setPosition(finalServoPositionSignal + activeOffset);
                         });
-                Command turretServo2Update = new LambdaCommand()
+                Command turretServo2Update = Command.build()
                         .setStart(() -> {
                             turret2.setPosition(finalServoPositionSignal - activeOffset);
                         });
-                ParallelGroup setTurret  = new ParallelGroup(turretServo1Update, turretServo2Update);
+                Command setTurret  = parallel(turretServo1Update, turretServo2Update);
                 setTurret.schedule();
                 //turret1.setPosition(servoPositionSignal + activeOffset);
                 //turret2.setPosition(servoPositionSignal - activeOffset);
@@ -704,26 +684,26 @@ public class DriveTrain2 implements Subsystem {
             lastLoggedServoSignal = servoPositionSignal;
             currentTurretPos = targetTurretAngle;
 
-            ActiveOpMode.telemetry().addData("turret", servoPositionSignal);
-            ActiveOpMode.telemetry().addData("turretParked", turretParked);
+            RobotContext.telemetry().addData("turret", servoPositionSignal);
+            RobotContext.telemetry().addData("turretParked", turretParked);
         }
 
 
-        ActiveOpMode.telemetry().addData("hoodAngle", hoodAngle);
-        ActiveOpMode.telemetry().addData("ballVelocity", flywheelSpeed);
-        ActiveOpMode.telemetry().addData("flywheelSpeed", requiredTPS);
-        ActiveOpMode.telemetry().addData("launch?", isOverlappingLaunchZone(currPose));
-        ActiveOpMode.telemetry().addData("Loop Time (ms)", loopTimeMs);
-        ActiveOpMode.telemetry().addData("Avg Loop Time", avgLoopTime);
-        ActiveOpMode.telemetry().addData("alliance", alliance);
-        ActiveOpMode.telemetry().addData("goalX", goalX);
-        ActiveOpMode.telemetry().addData("goalY", goalY);
-        ActiveOpMode.telemetry().addData("RobotX", currPose.getX());
-        ActiveOpMode.telemetry().addData("RobotY", currPose.getY());
-        ActiveOpMode.telemetry().addData("Robot Heading: ", follower.getHeading());
-        ActiveOpMode.telemetry().addData("Turret Offset", turretOffset);
-        ActiveOpMode.telemetry().addData("headingLock", headingLockActive);
-        ActiveOpMode.telemetry().update();
+        RobotContext.telemetry().addData("hoodAngle", hoodAngle);
+        RobotContext.telemetry().addData("ballVelocity", flywheelSpeed);
+        RobotContext.telemetry().addData("flywheelSpeed", requiredTPS);
+        RobotContext.telemetry().addData("launch?", isOverlappingLaunchZone(currPose));
+        RobotContext.telemetry().addData("Loop Time (ms)", loopTimeMs);
+        RobotContext.telemetry().addData("Avg Loop Time", avgLoopTime);
+        RobotContext.telemetry().addData("alliance", alliance);
+        RobotContext.telemetry().addData("goalX", goalX);
+        RobotContext.telemetry().addData("goalY", goalY);
+        RobotContext.telemetry().addData("RobotX", currPose.x());
+        RobotContext.telemetry().addData("RobotY", currPose.y());
+        RobotContext.telemetry().addData("Robot Heading: ", follower.heading());
+        RobotContext.telemetry().addData("Turret Offset", turretOffset);
+        RobotContext.telemetry().addData("headingLock", headingLockActive);
+        RobotContext.telemetry().update();
     }
 
     public void onStop() {
@@ -735,18 +715,18 @@ public class DriveTrain2 implements Subsystem {
 
     // Fixed constructor name to match class name exactly
    /* public Command getDriveToGateCommand() {
-        return new LambdaCommand()
+        return Command.build()
                 .setStart(() -> {
                     // 1. Build the path dynamically from your current position
-                    PathChain dGatePath = follower.pathBuilder()
+                    Path dGatePath = follower.pathBuilder()
                             .addPath(
                                     new BezierCurve(
                                             follower.getPose(),
-                                            new Pose(115.158, 61.289),
-                                            new Pose(133, 55.5)
+                                            pose(115.158, 61.289),
+                                            pose(133, 55.5)
                                     )
                             )
-                            .setLinearHeadingInterpolation(follower.getPose().getHeading(), Math.toRadians(32))
+                            .setLinearHeadingInterpolation(follower.getPose().heading(), Math.toRadians(32))
                             .setVelocityConstraint(1.0)
                             .setTValueConstraint(0.8)
 
@@ -760,10 +740,10 @@ public class DriveTrain2 implements Subsystem {
                     follower.followPath(dGatePath, false);
                 })
                 // 4. End the command when Pedro stops driving
-                .setIsDone(() -> !follower.isBusy())
-                .setStop((Boolean interrupted) -> {
+                .setDone(() -> !follower.isBusy())
+                .setEnd((Boolean interrupted) -> {
                     follower.breakFollowing(); // Safely hand control back to the joysticks
                 })
-                .requires(this); // Lock out your TeleOp joysticks while this is executing
+                .requiring(this); // Lock out your TeleOp joysticks while this is executing
     }*/
 }

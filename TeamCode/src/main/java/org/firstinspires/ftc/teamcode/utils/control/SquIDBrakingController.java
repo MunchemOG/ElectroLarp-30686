@@ -1,20 +1,26 @@
 package org.firstinspires.ftc.teamcode.utils.control;
 
-import com.pedropathing.control.PredictiveBrakingCoefficients;
-import com.pedropathing.control.PredictiveBrakingController;
+/** Project-specific square-root braking controller retained independently of Pedro internals. */
+public class SquIDBrakingController {
+    public static final class Coefficients {
+        public final double P;
+        public final double maximumBrakingPower;
 
-public class SquIDBrakingController extends PredictiveBrakingController {
-    private final PredictiveBrakingCoefficients coefficients;
+        public Coefficients(double p, double maximumBrakingPower) {
+            this.P = p;
+            this.maximumBrakingPower = maximumBrakingPower;
+        }
+    }
 
-    public SquIDBrakingController(PredictiveBrakingCoefficients coefficients) {
-        super(coefficients);
+    private final Coefficients coefficients;
+
+    public SquIDBrakingController(Coefficients coefficients) {
         this.coefficients = coefficients;
     }
 
-    @Override
     public double computeOutput(double error, double velocity) {
         double directionOfMotion = Math.signum(velocity);
-        double realError = error - computeBrakingDisplacement(velocity, directionOfMotion);
+        double realError = error;
         double outputPower = coefficients.P * Math.signum(realError) * Math.sqrt(Math.abs(realError));
         return clampReversePower(outputPower, directionOfMotion);
     }
