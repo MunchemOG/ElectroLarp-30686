@@ -41,7 +41,8 @@ captures/
 
 # IntelliJ
 *.iml
-.idea/
+.idea/*
+!.idea/icon.svg
 
 # For Mac users
 .DS_Store
