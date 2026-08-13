@@ -367,7 +367,7 @@ public class redNearTest extends NextFTCOpMode {
 
         Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.2), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.2), follower.getHeading());
 
-        if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 45) {
+        if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40) {
             intakeMotor.setPower(1);
             transfer.setPower(1);
             openStopper.schedule();
