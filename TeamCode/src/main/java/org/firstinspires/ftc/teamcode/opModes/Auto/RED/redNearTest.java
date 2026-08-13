@@ -340,7 +340,7 @@ public class redNearTest extends NextFTCOpMode {
         flywheelSpeed = results[0];
 
         if (preload == true) {
-            shooter(1900);
+            shooter(6000);
             turretOffset = -11;
 
         }
