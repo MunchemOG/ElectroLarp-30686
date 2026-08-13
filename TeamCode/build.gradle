@@ -33,17 +33,17 @@ android {
         jniLibs.useLegacyPackaging true
     }
 }
-repositories {
+/*repositories {
     maven {
         url = "https://repo.dairy.foundation/releases"
     }
     maven {
         url = "https://repo.dairy.foundation/snapshots"
     }
-}
+}*/
 dependencies {
     implementation project(':FtcRobotController')
-    implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
+    //implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
     implementation 'dev.nextftc:ftc:1.0.1'
     implementation 'dev.nextftc:hardware:1.0.1'
 }
