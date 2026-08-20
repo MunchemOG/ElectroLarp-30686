@@ -240,7 +240,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
     public static double rpmoffset = 200.0;
 
     public static double sotmFactor = 1.0;
-    public static double sotmOffset = 0.0;
+    public static double sotmOffset = 10;
     public static double verticalShift = 0.0;
     public static double verticalShiftStep = 50.0;
 
