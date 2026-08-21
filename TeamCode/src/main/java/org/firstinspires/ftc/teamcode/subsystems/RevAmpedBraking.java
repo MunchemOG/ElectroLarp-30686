@@ -44,13 +44,30 @@ import com.bylazar.configurables.annotations.Configurable;
 @Configurable
 public class RevAmpedBraking {
 
-    /** Quadratic braking coefficient, s^2/in. Theirs, converted from per-metre. */
-    public static double coefA = 0.001503 / 39.3701;
+    /** Quadratic braking coefficient, s^2/in.
+     *
+     *  THIS ROBOT'S OWN VALUE, from pedroPathing/Constants.java:
+     *  PredictiveBrakingCoefficients(0.18, 0.11091, 0.00097587) -> (prop, lin, quad).
+     *
+     *  RevAmped's converted value was 3.82e-5, about 26x smaller, because it
+     *  was fit on a heavier robot with different wheels. Checked against this
+     *  robot's measured 10-inch stop from ~57 in/s: these coefficients predict
+     *  9.5 in, RevAmped's predict 7.2 in. Only the STRUCTURE here is theirs.
+     *
+     *  KEEP IN SYNC with Constants.java if the follower is retuned. */
+    public static double coefA = 0.00097587;
 
-    /** Linear braking coefficient, seconds. Theirs verbatim. */
-    public static double coefB = 0.1239;
+    /** Linear braking coefficient, seconds. Also from Constants.java.
+     *  Note this one nearly matched RevAmped's 0.1239 anyway. */
+    public static double coefB = 0.11091;
 
-    /** Reference speed their fit was taken at. */
+    /** Linearisation reference speed, in/s.
+     *
+     *  The Lambert solution is evaluated exactly ONCE at this speed and the
+     *  result is then scaled linearly by actual speed, so the projection is
+     *  most accurate near this value. RevAmped used 72 for their robot; this
+     *  robot's measured brake entry is around 57-70, so 60 sits in the middle
+     *  of where it actually brakes. */
     public static double coefV0 = 72.0;
 
     /**

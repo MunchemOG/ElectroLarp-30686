@@ -80,17 +80,39 @@ public class DriveTrain2 implements Subsystem {
     public static double headingLockBlueDeg = 144.0;
 
     /** Output clamp - caps how hard the lock can spin the robot. */
-    public static double headingLockMaxPower = 0.5;
+    public static double headingLockMaxPower = 0.375;
 
     /** Inside this error, command zero, so it stops hunting on the target. */
-    public static double headingLockDeadbandDeg = 2.0;
+    public static double headingLockDeadbandDeg = 1.0;
 
     /** Proportional gain, power per degree of error. */
-    public static double headingKp = 0.001;
+    // ---- Pedro's tuned heading PIDF -------------------------------------
+    // Copied from pedroPathing/Constants.java. These operate on heading error
+    // in RADIANS, which is how Pedro works internally.
+    //
+    // The old hand-rolled gains were kP = 0.001 on DEGREES plus a constant
+    // 0.1 static push. Pedro's 1.77/rad is 0.031/deg - the old kP was 31x too
+    // weak, so the constant push did all the work, which is bang-bang control,
+    // which oscillates. There was also no derivative term at all; kD below is
+    // the damping that was missing.
+    //
+    // KEEP IN SYNC with Constants.java if the follower is ever retuned.
+    public static double headingKp = 1.77;      // per radian
+    public static double headingKd = 0.2235;    // per rad/s
 
-    /** Static feedforward: a constant push in the error direction, to break
-     *  stiction that the P term alone cannot overcome close to the target. */
-    public static double headingKs = 0.1;
+    /** Pedro's secondary (gentler) coefficients, used once the error is small
+     *  so the robot settles instead of hunting. */
+    public static double headingKpFine = 0.7895;
+    public static double headingKdFine = 0.1171;
+
+    /** Error below which the fine coefficients take over, degrees. */
+    public static double headingFineSwitchDeg = 4.0;
+
+    /** Static feedforward to break stiction, added outside the deadband.
+     *  Default 0 - with a real P term this is usually unnecessary, and it is
+     *  what made the old controller bang-bang. Raise to ~0.03 ONLY if the
+     *  robot consistently stalls a degree or two short. */
+    public static double headingKs = 0.0;
 
     /** Flip to -1.0 if the robot rotates AWAY from the target instead of
      *  toward it. Their rotation sign convention may not match this drive
@@ -317,6 +339,21 @@ public class DriveTrain2 implements Subsystem {
      * Releasing the bumper hands control straight back to the stick, so this
      * is also its own abort: if it ever runs away, let go.
      */
+    /**
+     * Rotation axis for the drive command. Normally the scaled right stick;
+     * while gamepad1's left bumper is held, a PD controller using Pedro's own
+     * tuned heading coefficients turns the chassis to a fixed field heading.
+     *
+     * Works in RADIANS because that is what Pedro's gains are tuned for.
+     *
+     * The derivative term uses the measured angular velocity rather than a
+     * differentiated error. Same thing mathematically when the target is
+     * fixed (d(error)/dt = -omega), but it avoids differentiating a noisy
+     * signal and avoids derivative kick when the target changes.
+     *
+     * Releasing the bumper hands control straight back to the stick, so this
+     * is also its own abort.
+     */
     private double rotationCommand(double stickX) {
         double stick = 0.8 * stickX;
 
@@ -326,19 +363,30 @@ public class DriveTrain2 implements Subsystem {
         }
         headingLockActive = true;
 
-        double targetDeg = (alliance == -1) ? headingLockRedDeg : headingLockBlueDeg;
-        double currentDeg = Math.toDegrees(follower.getPose().getHeading());
+        double targetRad = Math.toRadians((alliance == -1)
+                ? headingLockRedDeg : headingLockBlueDeg);
+        double currentRad = follower.getPose().getHeading();
 
-        // IEEEremainder wraps the error into [-180, 180], so the robot always
-        // turns the short way round.
-        double error = Math.IEEEremainder(currentDeg - targetDeg, 360.0);
-        if (Double.isNaN(error)) {
+        // IEEEremainder wraps to [-pi, pi] so the robot turns the short way.
+        double errorRad = Math.IEEEremainder(targetRad - currentRad, 2.0 * Math.PI);
+        if (Double.isNaN(errorRad)) {
             headingLockActive = false;
             return stick;
         }
-        if (Math.abs(error) < headingLockDeadbandDeg) return 0.0;
 
-        double outPower = error * headingKp + headingKs * Math.signum(error);
+        if (Math.abs(Math.toDegrees(errorRad)) < headingLockDeadbandDeg) return 0.0;
+
+        // Pedro switches to gentler coefficients near the target to settle.
+        boolean fine = Math.abs(Math.toDegrees(errorRad)) < headingFineSwitchDeg;
+        double kP = fine ? headingKpFine : headingKp;
+        double kD = fine ? headingKdFine : headingKd;
+
+        double omega = follower.getAngularVelocity();
+        if (Double.isNaN(omega)) omega = 0.0;
+
+        double outPower = kP * errorRad - kD * omega;
+        if (headingKs != 0.0) outPower += headingKs * Math.signum(errorRad);
+
         outPower *= headingLockSign;
         if (outPower > headingLockMaxPower) outPower = headingLockMaxPower;
         if (outPower < -headingLockMaxPower) outPower = -headingLockMaxPower;
