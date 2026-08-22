@@ -98,7 +98,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
 
     /** Measured decel (in/s^2, negative) that ENGAGES the braking model. Sits
      *  clear of the -52 float coast and well under the -165 active brake. */
-    public static double revAmpedBrakeThreshold = -60.0;
+    public static double revAmpedBrakeThreshold = -100.0;
 
     /** Measured decel (in/s^2, negative) at which the braking model RELEASES.
      *
@@ -113,7 +113,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
      *  the reasoning that a driver who brakes then coasts is still stopping.
      *  Raise toward -10 if you want it to hold on even longer; lower toward
      *  -60 if it should drop out as soon as active braking ends. */
-    public static double revAmpedReleaseThreshold = -10.0;
+    public static double revAmpedReleaseThreshold = -75.0;
 
     /** Let the RevAmped path bypass the sotmMinSpeed gate.
      *
@@ -240,8 +240,8 @@ public class ShooterCalcAccelClaude implements Subsystem {
     public static double rpmoffset = 200.0;
 
     public static double sotmFactor = 1.0;
-    public static double sotmOffset = 10;
-    public static double verticalShift = 0.0;
+    public static double sotmOffset = 0;
+    public static double verticalShift = 0;
     public static double verticalShiftStep = 50.0;
 
     /** Below this projected speed (in/s) the shot is treated as stationary. */
@@ -266,7 +266,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
     private static final double HOOD_MAX = Math.toRadians(80);
 
     private static final double CLOSE_ZONE_END = 66.29;
-    private static final double FAR_ZONE_START = 136.0;
+    private static final double FAR_ZONE_START = 120.0;
 
     // ---- Calibration curves ------------------------------------------------
 
@@ -275,7 +275,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
         double poly = 0.0032 * range * range - 0.6653 * range + 66.888;
         if(range <= CLOSE_ZONE_END) return poly + 0.4;
         if (range <= FAR_ZONE_START) return poly+0.75;
-        if (range >= FAR_ZONE_START + zoneBlendWidth) return 36.0;
+        if (range >= FAR_ZONE_START + zoneBlendWidth) return 34.0;
         double f = (range - FAR_ZONE_START) / zoneBlendWidth;
         return poly + (36.0 - poly) * f;
     }
@@ -284,7 +284,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
     public static double entryAngle(double range) {
         double closeDeg = 0.6106 * range - 57.478;
         double midDeg = SCORE_ANGLE;
-        double farDeg = -30.0;
+        double farDeg = -36.0;
         double half = zoneBlendWidth / 2.0;
 
         double deg;

@@ -58,7 +58,7 @@ public class DriveTrain2 implements Subsystem {
 
     public static double servoOffset = 0.0025;
     public static double wrapServoOffset = 0.0;
-    public static double turretServoThreshold = 0.0012;
+    public static double turretServoThreshold = 0.0002;
 
     // ---- Heading lock (hold gamepad1 LEFT BUMPER) ---------------------------
     // Ported from Meta Infinity's RobotTeleop. While held, the right stick is
@@ -76,14 +76,26 @@ public class DriveTrain2 implements Subsystem {
     /** Target field heading per alliance, degrees. THESE ARE PLACEHOLDERS -
      *  they are Meta Infinity's values and describe THEIR field positions.
      *  Set them to whatever you actually want to snap to. */
-    public static double headingLockRedDeg = 36;
-    public static double headingLockBlueDeg = 144.0;
+    public static double headingLockRedDeg = 28;
+    public static double headingLockBlueDeg = 152;
 
     /** Output clamp - caps how hard the lock can spin the robot. */
-    public static double headingLockMaxPower = 0.375;
+    /** Output clamp when FAR from the target - full authority so it snaps
+     *  round quickly. */
+    public static double headingLockMaxPower = 0.8;
+
+    /** Output clamp once inside headingLockFinePowerDeg. Stops the last
+     *  stretch of the approach from arriving too hot to stop. */
+    public static double headingLockMaxPowerFine = 0.35;
+
+    /** Error below which the fine POWER CAP applies, degrees. This is a
+     *  separate, wider threshold than headingFineSwitchDeg (the GAIN
+     *  switch) - you want to start easing off before you start being
+     *  gentle. */
+    public static double headingLockFinePowerDeg = 20.0;
 
     /** Inside this error, command zero, so it stops hunting on the target. */
-    public static double headingLockDeadbandDeg = 1.0;
+    public static double headingLockDeadbandDeg = 2.0;
 
     /** Proportional gain, power per degree of error. */
     // ---- Pedro's tuned heading PIDF -------------------------------------
@@ -97,27 +109,54 @@ public class DriveTrain2 implements Subsystem {
     // the damping that was missing.
     //
     // KEEP IN SYNC with Constants.java if the follower is ever retuned.
-    public static double headingKp = 1.77;      // per radian
-    public static double headingKd = 0.2235;    // per rad/s
+    // Coarse gains: FAST. kD is what limits approach speed - the D term
+    // saturates and pins omega to roughly (kP/kD)*error, so a big kD is a
+    // speed limiter, not just damping. 0.20 here approaches ~2.5x faster
+    // than the old 0.5235 did.
+    public static double headingKp = 1.4;      // per radian
+    public static double headingKd = 0.20;    // per rad/s
 
     /** Pedro's secondary (gentler) coefficients, used once the error is small
      *  so the robot settles instead of hunting. */
-    public static double headingKpFine = 0.7895;
-    public static double headingKdFine = 0.1171;
+    // Fine gains: DAMPED. Deliberately MORE damped than coarse (higher kD,
+    // lower kP) so the robot stops cleanly instead of bouncing. The old
+    // values had this backwards - lightly damped exactly where damping
+    // matters most.
+    public static double headingKpFine = 1.0;
+    public static double headingKdFine = 0.30;
 
     /** Error below which the fine coefficients take over, degrees. */
-    public static double headingFineSwitchDeg = 4.0;
+    public static double headingFineSwitchDeg = 14.0;
 
     /** Static feedforward to break stiction, added outside the deadband.
      *  Default 0 - with a real P term this is usually unnecessary, and it is
      *  what made the old controller bang-bang. Raise to ~0.03 ONLY if the
      *  robot consistently stalls a degree or two short. */
-    public static double headingKs = 0.0;
+    /** Static feedforward, added outside the deadband.
+     *
+     *  NOT optional on this robot. Mecanum rotational stiction is around
+     *  0.10 power; without this term the commanded power everywhere inside
+     *  the fine band is below that, so the robot simply parks 2-9 deg off
+     *  target and looks like it is refusing to finish the turn.
+     *
+     *  Tune to just above stiction. Too high and it hunts across the
+     *  deadband instead of settling. */
+    public static double headingKs = 0.10;
+
+    /** Flip to -1.0 if the D term is making things WORSE. The derivative
+     *  only damps if getAngularVelocity() signs the same way as increasing
+     *  heading; if it does not, kD*omega ADDS energy and the robot hunts.
+     *  Watch hlP and hlD: while rotating toward the target they should have
+     *  OPPOSITE signs. Same sign = anti-damping = flip this. */
+    public static double headingKdSign = 1.0;
+
+    // Diagnostics for the limit-cycle hunt, shown on telemetry.
+    public static double hlP = 0, hlD = 0, hlOmega = 0;
 
     /** Flip to -1.0 if the robot rotates AWAY from the target instead of
      *  toward it. Their rotation sign convention may not match this drive
      *  mapping, and this is the one-value fix. TEST ON BLOCKS FIRST. */
-    public static double headingLockSign = 1.0;
+    public static double headingLockSign = -1.0;
 
     /** True while the lock is driving rotation. Telemetry. */
     public static boolean headingLockActive = false;
@@ -125,7 +164,7 @@ public class DriveTrain2 implements Subsystem {
     /** Bumper state, maintained by the binding registered in periodic(). */
     private boolean headingLockHeld = false;
 
-    public static double yawFeedforwardGain = 0.115;
+    public static double yawFeedforwardGain = 0.145;
 
     //TURN OFF IN MATCHES
     public static boolean logAccel = false;
@@ -143,6 +182,24 @@ public class DriveTrain2 implements Subsystem {
     public static boolean turretParked = false;
 
     public static double turretParkSignal = 0.5;
+    /**
+     * Capture the CURRENT robot heading as this alliance's lock target.
+     *
+     * Point the robot where you want the lock to hold it, press the button,
+     * done. This sidesteps every coordinate-convention question: whatever
+     * frame the follower reports in, the captured number is in that frame
+     * by construction.
+     *
+     * Lives in a static, so it survives between opmode runs but NOT a
+     * redeploy. Once happy, read it off the headingLockTarget telemetry
+     * line and paste it into the default so it is permanent.
+     */
+    public static void captureHeadingLock() {
+        double deg = Math.toDegrees(follower.getPose().getHeading());
+        if (INSTANCE.alliance == -1) headingLockRedDeg = deg;
+        else headingLockBlueDeg = deg;
+    }
+
     public static void toggleTurretPark(){
         turretParked = !turretParked;
     }
@@ -252,7 +309,16 @@ public class DriveTrain2 implements Subsystem {
     public double getClosestValidTurretAngle(double relativeGoalDegrees) {
         double base = normalizeDegrees(relativeGoalDegrees);
 
-        double current = Double.isNaN(slewedTurretAngle) ? 0.0 : slewedTurretAngle;
+        // Select against the last TARGET, not the current position.
+        //
+        // slewedTurretAngle LAGS during a wrap, so mid-sweep the turret is
+        // momentarily nearer the representation it just left - the choice
+        // flips back, then forward again next loop, and the slew limiter never
+        // finishes either sweep. The turret parks mid-wrap pointing at nothing
+        // until the robot rotates out of the ambiguous band. Using the last
+        // target instead gives a continuous reference, so once a representation
+        // is chosen it stays chosen until it genuinely goes out of range.
+        double current = Double.isNaN(lastChosenTurretAngle) ? 0.0 : lastChosenTurretAngle;
 
         double best = Double.NaN;
         double bestCost = Double.MAX_VALUE;
@@ -271,7 +337,11 @@ public class DriveTrain2 implements Subsystem {
             return lastChosenTurretAngle;
         }
 
-        wrapping = Math.abs(best - current) > 90.0;
+        // 'wrapping' drives the slew rate and the preload drop, so it has to
+        // describe the PHYSICAL sweep still to be done - measure it against
+        // the actual position, not the selection reference.
+        double physical = Double.isNaN(slewedTurretAngle) ? 0.0 : slewedTurretAngle;
+        wrapping = Math.abs(best - physical) > 90.0;
         lastChosenTurretAngle = best;
         return best;
     }
@@ -384,12 +454,20 @@ public class DriveTrain2 implements Subsystem {
         double omega = follower.getAngularVelocity();
         if (Double.isNaN(omega)) omega = 0.0;
 
-        double outPower = kP * errorRad - kD * omega;
+        double pTerm = kP * errorRad;
+        double dTerm = -kD * omega * headingKdSign;
+        hlP = pTerm; hlD = dTerm; hlOmega = omega;
+
+        double outPower = pTerm + dTerm;
         if (headingKs != 0.0) outPower += headingKs * Math.signum(errorRad);
 
         outPower *= headingLockSign;
-        if (outPower > headingLockMaxPower) outPower = headingLockMaxPower;
-        if (outPower < -headingLockMaxPower) outPower = -headingLockMaxPower;
+
+        // Full authority when far, restrained once close.
+        double maxP = (Math.abs(Math.toDegrees(errorRad)) < headingLockFinePowerDeg)
+                ? headingLockMaxPowerFine : headingLockMaxPower;
+        if (outPower > maxP) outPower = maxP;
+        if (outPower < -maxP) outPower = -maxP;
         return outPower;
     }
 
@@ -526,9 +604,6 @@ public class DriveTrain2 implements Subsystem {
                 intakeMotor.setPower(0);
                 transfer.setPower(0);
             });
-
-    public boolean autoshoot = false;
-
     private FileWriter writer;
     private long t0;
     private int linesSinceFlush = 0;
@@ -609,14 +684,15 @@ public class DriveTrain2 implements Subsystem {
 
         if (firsttime == true) {
             // Schedule the command stored in the localize variable
-            Gamepads.gamepad1().rightBumper().whenBecomesTrue(()->openStopper.schedule())
+            Gamepads.gamepad1().leftBumper().whenBecomesTrue(()->openStopper.schedule())
                     .whenBecomesFalse(()->closeStopper.schedule());
             Gamepads.gamepad1().rightTrigger().greaterThan(0.3).whenBecomesTrue(shooterer);
             // Heading lock is HELD, not toggled - same shape as the stopper
             // binding above, just setting a flag instead of scheduling.
-            Gamepads.gamepad1().leftBumper()
+            Gamepads.gamepad1().rightBumper()
                     .whenBecomesTrue(() -> { headingLockHeld = true; })
                     .whenBecomesFalse(() -> { headingLockHeld = false; });
+
 
             // RELOCALIZE. This MUST stay inside the firsttime guard.
             //
@@ -637,6 +713,10 @@ public class DriveTrain2 implements Subsystem {
                         : new Pose(127.4, 77.5, Math.toRadians(90));
                 follower.setPose(relocalizePose);
             });
+            Gamepads.gamepad1().y().whenBecomesTrue(() -> {
+                toggleAutoShoot.schedule();
+            });
+
 
             firsttime = false;
         }
@@ -756,21 +836,41 @@ public class DriveTrain2 implements Subsystem {
             ActiveOpMode.telemetry().addData("turretParked", turretParked);
         }
 
+        if(autoShoot==true) {
+            Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.15), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.15), follower.getHeading());
+            if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40) {
+                intakeMotor.setPower(1);
+                transfer.setPower(1);
+                openStopper.schedule();
+            } else {
+                closeStopper.schedule();
+            }
+        }
 
-        ActiveOpMode.telemetry().addData("hoodAngle", hoodAngle);
-        ActiveOpMode.telemetry().addData("ballVelocity", flywheelSpeed);
-        ActiveOpMode.telemetry().addData("flywheelSpeed", requiredTPS);
+
+        //ActiveOpMode.telemetry().addData("hoodAngle", hoodAngle);
+        //ActiveOpMode.telemetry().addData("ballVelocity", flywheelSpeed);
+        //ActiveOpMode.telemetry().addData("flywheelSpeed", requiredTPS);
         ActiveOpMode.telemetry().addData("launch?", isOverlappingLaunchZone(currPose));
-        ActiveOpMode.telemetry().addData("Loop Time (ms)", loopTimeMs);
-        ActiveOpMode.telemetry().addData("Avg Loop Time", avgLoopTime);
+        //ActiveOpMode.telemetry().addData("Loop Time (ms)", loopTimeMs);
+        //ActiveOpMode.telemetry().addData("Avg Loop Time", avgLoopTime);
         ActiveOpMode.telemetry().addData("alliance", alliance);
-        ActiveOpMode.telemetry().addData("goalX", goalX);
-        ActiveOpMode.telemetry().addData("goalY", goalY);
+        //ActiveOpMode.telemetry().addData("goalX", goalX);
+        //ActiveOpMode.telemetry().addData("goalY", goalY);
         ActiveOpMode.telemetry().addData("RobotX", currPose.getX());
         ActiveOpMode.telemetry().addData("RobotY", currPose.getY());
         ActiveOpMode.telemetry().addData("Robot Heading: ", follower.getHeading());
         ActiveOpMode.telemetry().addData("Turret Offset", turretOffset);
-        ActiveOpMode.telemetry().addData("headingLock", headingLockActive);
+        //ActiveOpMode.telemetry().addData("headingLock", headingLockActive);
+        double hlTarget = (alliance == -1) ? headingLockRedDeg : headingLockBlueDeg;
+        //ActiveOpMode.telemetry().addData("headingLockTarget", hlTarget);
+        /*ActiveOpMode.telemetry().addData("headingLockError",
+                Math.toDegrees(Math.IEEEremainder(
+                        Math.toRadians(hlTarget) - follower.getPose().getHeading(),
+                        2.0 * Math.PI)));
+        ActiveOpMode.telemetry().addData("hlP", hlP);
+        ActiveOpMode.telemetry().addData("hlD", hlD);
+        ActiveOpMode.telemetry().addData("hlOmega", hlOmega);*/
         ActiveOpMode.telemetry().update();
     }
 
