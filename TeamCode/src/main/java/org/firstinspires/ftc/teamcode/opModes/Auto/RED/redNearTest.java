@@ -264,7 +264,7 @@ public class redNearTest extends NextFTCOpMode {
                 // --- Gate cycle 1 ---
                 new FollowPath(paths.quickerGate, true, 1.0),
                 new Delay(1.1),
-                new FollowPath(paths.quickerGateReturn, true, 1.0),
+                new FollowPath(paths.gateShoot1, true, 1.0),
 
                 // --- Gate cycle 2 ---
                 new FollowPath(paths.gateIntake2, true, 1.0),
@@ -279,7 +279,7 @@ public class redNearTest extends NextFTCOpMode {
                 // --- Gate cycle 3 ---
                 new FollowPath(paths.quickerGate, true, 1.0),
                 new Delay(1.1),
-                new FollowPath(paths.quickerGateReturn, true, 1.0),
+                new FollowPath(paths.gateShoot3, true, 1.0),
 
                 // --- Gate cycle 4 ---
                 new FollowPath(paths.gateIntake4, true, 1.0),
