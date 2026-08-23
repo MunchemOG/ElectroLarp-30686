@@ -39,8 +39,8 @@ public class LaunchDetector {
             double heading = robotPose.getHeading();
 
             // TEST 1: Absolute Subsumption Check (Is the robot's center fully inside either zone?)
-            //if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy) || SMALL_LAUNCH_ZONE.containsCenter(cx, cy)) {
-            if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy)) {
+            if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy) || SMALL_LAUNCH_ZONE.containsCenter(cx, cy)) {
+            //if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy)) {
                 return true;
             }
 
