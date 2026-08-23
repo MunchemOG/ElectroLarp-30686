@@ -275,7 +275,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
         double poly = 0.0032 * range * range - 0.6653 * range + 66.888;
         if(range <= CLOSE_ZONE_END) return poly + 0.4;
         if (range <= FAR_ZONE_START) return poly+0.75;
-        if (range >= FAR_ZONE_START + zoneBlendWidth) return 34.0;
+        if (range >= FAR_ZONE_START + zoneBlendWidth) return 37.4;
         double f = (range - FAR_ZONE_START) / zoneBlendWidth;
         return poly + (36.0 - poly) * f;
     }

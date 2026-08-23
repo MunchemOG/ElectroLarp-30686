@@ -76,8 +76,8 @@ public class DriveTrain2 implements Subsystem {
     /** Target field heading per alliance, degrees. THESE ARE PLACEHOLDERS -
      *  they are Meta Infinity's values and describe THEIR field positions.
      *  Set them to whatever you actually want to snap to. */
-    public static double headingLockRedDeg = 28;
-    public static double headingLockBlueDeg = 152;
+    public static double headingLockRedDeg = 29;
+    public static double headingLockBlueDeg = 151;
 
     /** Output clamp - caps how hard the lock can spin the robot. */
     /** Output clamp when FAR from the target - full authority so it snaps
@@ -213,15 +213,16 @@ public class DriveTrain2 implements Subsystem {
     private ServoImplEx turret1;
     private ServoImplEx turret2;
 
-    public static double turretOffset = -42;
-    public static double turretOffset2 = 42;
+    public static double turretOffset = 0;
+    public static double turretOffset2 = 0;
     public static double turretOffsetStep = -5;
     // Inches from the Pinpoint/Pedro robot pose origin to the turret pivot.
     public static double turretForwardOffset = -0.52588;
     public static double turretStrafeOffset = 0;
 
+
     public static double openStopperPos = 0;
-    public static double closeStopperPos = 0.045;
+    public static double closeStopperPos = 0.048;
     public Command driveToGate = new LambdaCommand()
             .setStart(() -> dToGate = true);
     public static boolean dToGate = false;
@@ -491,6 +492,10 @@ public class DriveTrain2 implements Subsystem {
             .setStart(() -> {
                 stopperServo.setPosition(closeStopperPos); // close
             }).setIsDone(() -> true);
+    public static Command closeautoShootStopper = new LambdaCommand()
+            .setStart(() -> {
+                stopperServo.setPosition(closeStopperPos);// close
+            }).setIsDone(() -> true);
     public static Command openStopper = new LambdaCommand()
             .setStart(() -> {
                 stopperServo.setPosition(openStopperPos); // open
@@ -616,6 +621,7 @@ public class DriveTrain2 implements Subsystem {
             shoot.schedule();
         }
     }
+    public static boolean turnedOff=false;
 
     public static void shootreal(){
         //shoot = true;
@@ -838,12 +844,19 @@ public class DriveTrain2 implements Subsystem {
 
         if(autoShoot==true) {
             Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.15), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.15), follower.getHeading());
-            if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40) {
+            if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40 || shooting==true) {
                 intakeMotor.setPower(1);
                 transfer.setPower(1);
                 openStopper.schedule();
+                turnedOff=false;
             } else {
-                closeStopper.schedule();
+                if(turnedOff==false) {
+                    closeStopper.schedule();
+                    intakeMotor.setPower(0);
+                    transfer.setPower(0);
+                    turnedOff=true;
+                }
+
             }
         }
 

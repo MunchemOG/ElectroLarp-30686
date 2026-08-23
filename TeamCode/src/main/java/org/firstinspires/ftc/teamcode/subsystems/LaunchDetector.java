@@ -39,8 +39,8 @@ public class LaunchDetector {
             double heading = robotPose.getHeading();
 
             // TEST 1: Absolute Subsumption Check (Is the robot's center fully inside either zone?)
-            if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy) || SMALL_LAUNCH_ZONE.containsCenter(cx, cy)) {
-            //if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy)) {
+            //if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy) || SMALL_LAUNCH_ZONE.containsCenter(cx, cy)) {
+            if (LARGE_LAUNCH_ZONE.containsCenter(cx, cy)) {
                 return true;
             }
 
@@ -61,8 +61,8 @@ public class LaunchDetector {
                 globalCorners[i][1] = cy + (localCorners[i][0] * sin + localCorners[i][1] * cos);
             }
 
-            return robotEdgesIntersectTriangle(globalCorners, LARGE_LAUNCH_ZONE) ||
-                    robotEdgesIntersectTriangle(globalCorners, SMALL_LAUNCH_ZONE);
+            return robotEdgesIntersectTriangle(globalCorners, LARGE_LAUNCH_ZONE) /*||
+                    robotEdgesIntersectTriangle(globalCorners, SMALL_LAUNCH_ZONE)*/;
         }
 
         private static boolean robotEdgesIntersectTriangle(double[][] rCorners, Triangle t) {
