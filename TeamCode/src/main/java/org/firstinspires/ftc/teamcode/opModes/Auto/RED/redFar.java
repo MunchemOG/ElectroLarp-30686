@@ -38,7 +38,7 @@ import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
 
-@Autonomous(name = "Red Far V12")
+@Autonomous(name = "Red Far V14")
 @Configurable
 public class redFar extends NextFTCOpMode {
 
@@ -74,6 +74,19 @@ public class redFar extends NextFTCOpMode {
     private static final double MIN_ANGLE = -224.75;
     private static final double MAX_ANGLE = 224.75;
     private static final double TURRET_RANGE = 449.51;
+    private double slewedTurretAngle = Double.NaN;
+    private double lastChosenTurretAngle = Double.NaN;
+    private boolean wrapping = false;
+    private final com.qualcomm.robotcore.util.ElapsedTime slewTimer = new com.qualcomm.robotcore.util.ElapsedTime();
+    private double lastAppliedOffset = Double.NaN;
+
+    public static double wrapServoOffset = 0.0;
+    public static double turretServoThreshold = 0.0002;
+    public static double maxSlewNormalDegPerSec = 400;
+    public static double maxSlewWrapDegPerSec = 540;
+    public static double yawFeedforwardGain = 0.145;
+
+    private double lastServoPos = -1; // was a local var — needs to persist across loops
 
     private double currentTurretPos = 90;
 
@@ -87,8 +100,8 @@ public class redFar extends NextFTCOpMode {
     private ServoImplEx turret1;
     private ServoImplEx turret2;
 
-    public static double turretOffset = -3.5;
-    public static double turretOffset2 = 2;
+    public static double turretOffset = 1;
+    public static double turretOffset2 = 0;
     public static double turretOffsetStep = -5;
 
     // Inches from the Pinpoint/Pedro robot pose origin to the turret pivot.
@@ -117,18 +130,46 @@ public class redFar extends NextFTCOpMode {
     public Pose currPose;
 
     public double getClosestValidTurretAngle(double relativeGoalDegrees) {
-        double option1 = normalizeDegrees(relativeGoalDegrees);
-        return Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, option1));
+        double base = normalizeDegrees(relativeGoalDegrees);
+        double current = Double.isNaN(lastChosenTurretAngle) ? 0.0 : lastChosenTurretAngle;
+
+        double best = Double.NaN;
+        double bestCost = Double.MAX_VALUE;
+        for (int k = -1; k <= 1; k++) {
+            double cand = base + 360.0 * k;
+            if (cand < MIN_ANGLE || cand > MAX_ANGLE) continue;
+            double cost = Math.abs(cand - current);
+            if (cost < bestCost) {
+                bestCost = cost;
+                best = cand;
+            }
+        }
+        if (Double.isNaN(best)) {
+            wrapping = false;
+            lastChosenTurretAngle = Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, base));
+            return lastChosenTurretAngle;
+        }
+
+        double physical = Double.isNaN(slewedTurretAngle) ? 0.0 : slewedTurretAngle;
+        wrapping = Math.abs(best - physical) > 90.0;
+        lastChosenTurretAngle = best;
+        return best;
+    }
+    private double slewTurret(double target) {
+        double elapsedSec = slewTimer.seconds();
+        slewTimer.reset();
+        if (elapsedSec <= 0 || elapsedSec > 0.5) elapsedSec = 0.02;
+
+        if (Double.isNaN(slewedTurretAngle)) slewedTurretAngle = target;
+
+        double rate = wrapping ? maxSlewWrapDegPerSec : maxSlewNormalDegPerSec;
+        double maxDelta = rate * elapsedSec;
+        slewedTurretAngle += com.qualcomm.robotcore.util.Range.clip(target - slewedTurretAngle, -maxDelta, maxDelta);
+        return slewedTurretAngle;
     }
 
     private double normalizeDegrees(double degrees) {
-        while (degrees > 180.0) {
-            degrees -= 360.0;
-        }
-        while (degrees <= -180.0) {
-            degrees += 360.0;
-        }
-        return degrees;
+        return Math.IEEEremainder(degrees, 360.0);
     }
 
     private Pose getTurretPose(Pose robotPose) {
@@ -223,7 +264,9 @@ public class redFar extends NextFTCOpMode {
 
         turret1.setPosition(servoPositionSignal + servoOffset);
         turret2.setPosition(servoPositionSignal - servoOffset);
-        double lastServoPos = servoPositionSignal;
+        lastServoPos = servoPositionSignal;
+
+
 
         currentTurretPos = targetTurretAngle;
 
@@ -262,7 +305,7 @@ public class redFar extends NextFTCOpMode {
     public Command Auto() {
         return new SequentialGroup(
                 disablePreload,
-                new Delay(1.0),
+                new Delay(1.3),
                 shoot,
                 intakeMotorOn,
                 // --- Spike 1 cycle ---
@@ -355,20 +398,25 @@ public class redFar extends NextFTCOpMode {
             double hoodAngle = results[1];
             hoodServo.setPosition(hoodAngle);
             shooter((float) -(flywheelSpeed + 30));
-            double robotAngularVelocityRads = follower.getAngularVelocity();
-            double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
             double feedforwardOffset = 0;
 
-            targetTurretAngle = getClosestValidTurretAngle(overriddenTurretAngle - turretOffset - feedforwardOffset);
+            double rawTarget = getClosestValidTurretAngle(overriddenTurretAngle - turretOffset - feedforwardOffset);
+            targetTurretAngle = slewTurret(rawTarget);
+
             double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
             servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
 
-            turret1.setPosition(servoPositionSignal + servoOffset);
-            turret2.setPosition(servoPositionSignal - servoOffset);
-            double lastServoPos = servoPositionSignal;
+            double activeOffset = wrapping ? wrapServoOffset : servoOffset;
+            boolean offsetChanged = Math.abs(activeOffset - lastAppliedOffset) > 1e-9 || Double.isNaN(lastAppliedOffset);
+
+            if (lastServoPos < 0 || offsetChanged || Math.abs(servoPositionSignal - lastServoPos) > turretServoThreshold) {
+                turret1.setPosition(servoPositionSignal + activeOffset);
+                turret2.setPosition(servoPositionSignal - activeOffset);
+                lastServoPos = servoPositionSignal;
+                lastAppliedOffset = activeOffset;
+            }
 
             currentTurretPos = targetTurretAngle;
-
         }
 
         if (preload == false) {
@@ -378,21 +426,26 @@ public class redFar extends NextFTCOpMode {
             double headingError = results[2];
             double robotAngularVelocityRads = follower.getAngularVelocity();
             double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
-            double feedforwardOffset = robotAngularVelocityDegs * 115;
-            targetTurretAngle = getClosestValidTurretAngle(headingError - turretOffset - feedforwardOffset);
+            double feedforwardOffset = robotAngularVelocityDegs * yawFeedforwardGain; // was *115
+
+            double rawTarget = getClosestValidTurretAngle(headingError + turretOffset - feedforwardOffset); // sign flipped to + — see note below
+            targetTurretAngle = slewTurret(rawTarget);
+
             double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
             servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
 
-            turret1.setPosition(servoPositionSignal + servoOffset);
-            turret2.setPosition(servoPositionSignal - servoOffset);
+            double activeOffset = wrapping ? wrapServoOffset : servoOffset;
+            boolean offsetChanged = Math.abs(activeOffset - lastAppliedOffset) > 1e-9 || Double.isNaN(lastAppliedOffset);
+
+            if (lastServoPos < 0 || offsetChanged || Math.abs(servoPositionSignal - lastServoPos) > turretServoThreshold) {
+                turret1.setPosition(servoPositionSignal + activeOffset);
+                turret2.setPosition(servoPositionSignal - activeOffset);
+                lastServoPos = servoPositionSignal;
+                lastAppliedOffset = activeOffset;
+            }
 
             currentTurretPos = targetTurretAngle;
         }
-
-
-        Storage.currentPose = follower.getPose();
-
-        Storage.setPose = true;
     }
 
     @Override
@@ -437,18 +490,18 @@ public class redFar extends NextFTCOpMode {
         // for those.
 
         //====Change these only para paths egg=================
-        Pose FIRST_SPIKE = new Pose(120, 30, Math.toRadians(90));
-        Pose FIRST_SPIKE_CONTROL = new Pose(120.5, 17.5);
+        Pose FIRST_SPIKE = new Pose(120, 45, Math.toRadians(90));
+        Pose FIRST_SPIKE_CONTROL = new Pose(119, 20.5);
         Pose FIRST_SHOOT = new Pose(98, 14);
         Pose FIRST_SHOOT_CONTROL = new Pose(120.5, 16);
-        Pose SECOND_SPIKE = new Pose(133, 12, Math.toRadians(0));
-        Pose SECOND_SHOOT = new Pose(96.5, 14);
-        Pose SWEEP_1 = new Pose(132.5, 10, Math.toRadians(0));
-        Pose SWEEP_2 = new Pose(132, 14.5, Math.toRadians(60));
-        Pose SWEEP_2_CONTROL = new Pose(127.3, 11.8);
-        Pose SWEEP_3 = new Pose(132, 34.5, Math.toRadians(60));
-        Pose SWEEP_SHOOT = new Pose(86.5, 17.5);
-        Pose PARK_POSE = new Pose(97.5, 22.5);
+        Pose SECOND_SPIKE = new Pose(134, 12, Math.toRadians(0));
+        Pose SECOND_SHOOT = new Pose(97.5, 14);
+        Pose SWEEP_1 = new Pose(133.5, 10, Math.toRadians(0));
+        Pose SWEEP_2 = new Pose(133, 14.5, Math.toRadians(60));
+        Pose SWEEP_2_CONTROL = new Pose(128.3, 11.8);
+        Pose SWEEP_3 = new Pose(133, 34.5, Math.toRadians(60));
+        Pose SWEEP_SHOOT = new Pose(87.5, 17.5);
+        Pose PARK_POSE = new Pose(98.5, 22.5);
 
         public Paths(Follower follower) {
 
