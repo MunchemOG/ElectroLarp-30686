@@ -250,15 +250,19 @@ public class redNearTest extends NextFTCOpMode {
 
     public Command Auto() {
         return new SequentialGroup(
+                setSOTMShooting,
                 new FollowPath(paths.shootPreloads, true, 1.0),
+                new Delay (0.65),
                 intakeMotorOn,
                 openStopper,
-                new Delay(0.4),
+                new Delay(0.15),
                 closeStopper,
                 disablePreload,
-                setBrakeShooting,
+                //new Delay(0.1), test if this is actually needed
+
                 // --- Spike 2 cycle ---
                 new FollowPath(paths.intakeSpike2, true, 1.0),
+                setBrakeShooting,
                 new FollowPath(paths.shootSpike2, true, 1.0),
 
                 // --- Gate cycle 1 ---
@@ -277,7 +281,7 @@ public class redNearTest extends NextFTCOpMode {
                 new FollowPath(paths.shootSpike1, true, 1.0),
 
                 // --- Gate cycle 3 ---
-                new FollowPath(paths.quickerGate, true, 1.0),
+                new FollowPath(paths.quickerGate2, true, 1.0),
                 new Delay(1.1),
                 new FollowPath(paths.gateShoot3, true, 1.0),
 
@@ -295,7 +299,7 @@ public class redNearTest extends NextFTCOpMode {
 
                 //new FollowPath(paths.park, true, 1.0)
                 setSOTMShooting,
-                new FollowPath(paths.lastGateWithPark, true, 1.0)
+                new FollowPath(paths.lastGateWithPark, true, 1.0) //make this faster
         );
     }
 
@@ -340,14 +344,14 @@ public class redNearTest extends NextFTCOpMode {
         flywheelSpeed = results[0];
 
         if (preload == true) {
-            shooter(6000);
-            turretOffset = -11;
+            shooter((float) flywheelSpeed+40);
+            turretOffset = -8;
 
         }
 
         if (preload == false) {
             shooter((float) flywheelSpeed);
-            turretOffset = -12;
+            turretOffset = -5;
 
         }
         double hoodAngle = results[1];
@@ -367,7 +371,7 @@ public class redNearTest extends NextFTCOpMode {
 
         Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.2), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.2), follower.getHeading());
 
-        if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40) {
+        if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40 && preload==false) {
             intakeMotor.setPower(1);
             transfer.setPower(1);
             openStopper.schedule();
@@ -393,9 +397,8 @@ public class redNearTest extends NextFTCOpMode {
         public PathChain shootSpike1;
         public PathChain quickerGate;
 
-        public PathChain quickerGateReturn;
+        public PathChain quickerGate2;
 
-        public PathChain quickerGateReturnCurve;
 
         public PathChain intakeSpike2;
         public PathChain shootSpike2;
@@ -469,7 +472,7 @@ public class redNearTest extends NextFTCOpMode {
                                     GATE_SHOOT_2
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(7), Math.toRadians(-45))
+                    .setLinearHeadingInterpolation(Math.toRadians(7), Math.toRadians(-27))
                     .build();
 
             quickerGate = follower.pathBuilder()
@@ -479,11 +482,11 @@ public class redNearTest extends NextFTCOpMode {
                     .setLinearHeadingInterpolation(Math.toRadians(-27), GATE_3.getHeading(), 0.5)
                     .build();
 
-            quickerGateReturn = follower.pathBuilder()
-                    .addPath(new BezierLine(GATE_3, new Pose(119, 64)))
-                    .setConstantHeadingInterpolation(Math.toRadians(GATE_3.getHeading()))
-                    .addPath(new BezierLine(new Pose(119, 64), GATE_SHOOT_2))
-                    .setLinearHeadingInterpolation(GATE_3.getHeading(), Math.toRadians(-28), 0.5)
+            quickerGate2 = follower.pathBuilder()
+                    .addPath(new BezierLine(GATE_SHOOT_2, new Pose(110, 68)))
+                    .setTangentHeadingInterpolation()
+                    .addPath(new BezierLine(new Pose(110, 68), new Pose(GATE_3.getX(), GATE_3.getY()+0.3)))
+                    .setLinearHeadingInterpolation(Math.toRadians(-27), GATE_3.getHeading(), 0.5)
                     .build();
 
 

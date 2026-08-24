@@ -222,7 +222,7 @@ public class DriveTrain2 implements Subsystem {
 
 
     public static double openStopperPos = 0;
-    public static double closeStopperPos = 0.048;
+    public static double closeStopperPos = 0.051;
     public Command driveToGate = new LambdaCommand()
             .setStart(() -> dToGate = true);
     public static boolean dToGate = false;
