@@ -252,7 +252,7 @@ public class redNearTest extends NextFTCOpMode {
         return new SequentialGroup(
                 setSOTMShooting,
                 new FollowPath(paths.shootPreloads, true, 1.0),
-                new Delay (0.65),
+                new Delay (0.75),
                 intakeMotorOn,
                 openStopper,
                 new Delay(0.15),
