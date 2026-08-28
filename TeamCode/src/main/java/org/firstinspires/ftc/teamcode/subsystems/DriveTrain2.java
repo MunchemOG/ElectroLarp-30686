@@ -76,8 +76,8 @@ public class DriveTrain2 implements Subsystem {
     /** Target field heading per alliance, degrees. THESE ARE PLACEHOLDERS -
      *  they are Meta Infinity's values and describe THEIR field positions.
      *  Set them to whatever you actually want to snap to. */
-    public static double headingLockRedDeg = 29;
-    public static double headingLockBlueDeg = 151;
+    public static double headingLockRedDeg = 35.5;
+    public static double headingLockBlueDeg = 144.5;
 
     /** Output clamp - caps how hard the lock can spin the robot. */
     /** Output clamp when FAR from the target - full authority so it snaps
@@ -114,7 +114,7 @@ public class DriveTrain2 implements Subsystem {
     // speed limiter, not just damping. 0.20 here approaches ~2.5x faster
     // than the old 0.5235 did.
     public static double headingKp = 1.4;      // per radian
-    public static double headingKd = 0.20;    // per rad/s
+    public static double headingKd = 0.35;    // per rad/s
 
     /** Pedro's secondary (gentler) coefficients, used once the error is small
      *  so the robot settles instead of hunting. */
@@ -222,7 +222,7 @@ public class DriveTrain2 implements Subsystem {
 
 
     public static double openStopperPos = 0;
-    public static double closeStopperPos = 0.051;
+    public static double closeStopperPos = 0.142;
     public Command driveToGate = new LambdaCommand()
             .setStart(() -> dToGate = true);
     public static boolean dToGate = false;
@@ -597,6 +597,8 @@ public class DriveTrain2 implements Subsystem {
 
     Command shooterer = new LambdaCommand()
             .setStart(() -> shoot());
+
+    public boolean isRightTriggerHeld;
     private static Command intakeMotorOn = new LambdaCommand()
             .setStart(() -> {
                 intakeMotor.setPower(1);
@@ -843,8 +845,8 @@ public class DriveTrain2 implements Subsystem {
         }
 
         if(autoShoot==true) {
-            Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.15), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.15), follower.getHeading());
-            if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40 || shooting==true) {
+            Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.18), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.18), follower.getHeading());
+            if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 45 || shooting==true) {
                 intakeMotor.setPower(1);
                 transfer.setPower(1);
                 openStopper.schedule();
@@ -852,9 +854,13 @@ public class DriveTrain2 implements Subsystem {
             } else {
                 if(turnedOff==false) {
                     closeStopper.schedule();
-                    intakeMotor.setPower(0);
-                    transfer.setPower(0);
+                    if(Gamepads.gamepad1().rightTrigger().get()<0.3) {
+                        intakeMotor.setPower(0);
+                        transfer.setPower(0);
+                    }
                     turnedOff=true;
+
+
                 }
 
             }

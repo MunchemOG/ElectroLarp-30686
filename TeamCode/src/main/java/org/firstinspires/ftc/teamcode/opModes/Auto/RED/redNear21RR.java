@@ -40,11 +40,11 @@ import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
 
-@Autonomous(name = "Red Close TESTING V2")
+@Autonomous(name = "Red Close 21 RR")
 @Configurable
-public class redNearTest extends NextFTCOpMode {
+public class redNear21RR extends NextFTCOpMode {
 
-    public redNearTest() {
+    public redNear21RR() {
         addComponents(
                 BulkReadComponent.INSTANCE,
                 BindingsComponent.INSTANCE,
@@ -85,7 +85,7 @@ public class redNearTest extends NextFTCOpMode {
     private ServoImplEx turret1;
     private ServoImplEx turret2;
 
-    public static double turretOffset = 0;
+    public static double turretOffset = -5;
     public static double turretOffset2 = 2;
     public static double turretOffsetStep = -5;
 
@@ -102,6 +102,8 @@ public class redNearTest extends NextFTCOpMode {
             .setStart(() -> {
                 ShooterCalcAccelClaude.revAmpedMode=1; // close
             }).setIsDone(() -> true);
+
+
 
     private Command intakeMotorOn = new LambdaCommand()
             .setStart(() -> {
@@ -252,43 +254,54 @@ public class redNearTest extends NextFTCOpMode {
                 })
                 .setIsDone(() -> true);
     }
+    private SequentialGroup shoot = new SequentialGroup(
+            openStopper,
+            intakeMotorOn,
+            new Delay(0.27),
+            closeStopper);
 
     public Command Auto() {
         return new SequentialGroup(
                 setSOTMShooting,
                 new FollowPath(paths.shootPreloads, true, 1.0),
-                new Delay (0.7),
+                new Delay (0.9),
                 intakeMotorOn,
                 openStopper,
-                new Delay(0.15),
+                new Delay(0.275),
                 closeStopper,
                 disablePreload,
                 //new Delay(0.1), test if this is actually needed
 
                 // --- Spike 2 cycle ---
                 new FollowPath(paths.intakeSpike2, true, 1.0),
-                setBrakeShooting,
+                //setBrakeShooting,
                 new FollowPath(paths.shootSpike2, true, 1.0),
+                shoot,
 
                 // --- Gate cycle 1 ---
                 new FollowPath(paths.quickerGate, true, 1.0),
-                new Delay(1.1),
+                setBrakeShooting,
+                new Delay(1.35),
                 new FollowPath(paths.gateShoot1, true, 1.0),
+                shoot,
 
                 // --- Gate cycle 2 ---
-                new FollowPath(paths.gateIntake2, true, 1.0),
-                new Delay(2.1),
+                new FollowPath(paths.gateIntake2, false, 1.0),
+                new Delay(2.45),
                 new FollowPath(paths.gateShoot2, true, 1.0),
+                shoot,
 
 
                 // --- Spike 1 cycle ---
                 new FollowPath(paths.intakeSpike1, true, 1.0),
                 new FollowPath(paths.shootSpike1, true, 1.0),
+                shoot,
 
                 // --- Gate cycle 3 ---
                 new FollowPath(paths.quickerGate2, true, 1.0),
-                new Delay(1.1),
+                new Delay(1.35),
                 new FollowPath(paths.gateShoot3, true, 1.0),
+                shoot,
 
                 // --- Gate cycle 4 ---
                 //new FollowPath(paths.gateIntake4, true, 1.0),
@@ -297,14 +310,15 @@ public class redNearTest extends NextFTCOpMode {
                 //new Delay(0.3),
 
                 // --- Gate cycle 5 ---
-                new FollowPath(paths.gateIntake5, true, 1.0),
-                new Delay(2.1),
+                new FollowPath(paths.gateIntake5, false, 1.0),
+                new Delay(2.5),
                 //new FollowPath(paths.gateShoot5, true, 1.0),
 //                new Delay(0.3),
 
                 //new FollowPath(paths.park, true, 1.0)
-                setSOTMShooting,
-                new FollowPath(paths.lastGateWithPark, true, 1.0) //make this faster
+                new FollowPath(paths.lastGateWithPark, true, 1.0),
+                new Delay(0.125),//make this faster
+                shoot
         );
     }
 
@@ -349,15 +363,14 @@ public class redNearTest extends NextFTCOpMode {
         flywheelSpeed = results[0];
 
         if (preload == true) {
-            flywheel.setPower(1);
-            flywheel2.setPower(-1);
+            shooter(2200);
             turretOffset = -8;
 
         }
 
         if (preload == false) {
             shooter((float) flywheelSpeed);
-            turretOffset = -5;
+            turretOffset = -9;
 
         }
         double hoodAngle = results[1];
@@ -366,7 +379,7 @@ public class redNearTest extends NextFTCOpMode {
         double robotAngularVelocityRads = follower.getAngularVelocity();
         double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
         double feedforwardOffset = robotAngularVelocityDegs * 0;
-        targetTurretAngle = getClosestValidTurretAngle(headingError - turretOffset - feedforwardOffset);
+        targetTurretAngle = getClosestValidTurretAngle(headingError - turretOffset /*- feedforwardOffset*/);
         double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
         servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
 
@@ -377,13 +390,13 @@ public class redNearTest extends NextFTCOpMode {
 
         Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.2), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.2), follower.getHeading());
 
-        if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40 && preload==false) {
+        /*if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40 && preload==false) {
             intakeMotor.setPower(1);
             transfer.setPower(1);
             openStopper.schedule();
         } else {
             closeStopper.schedule();
-        }
+        }*/
 
         Storage.currentPose = follower.getPose();
 
@@ -429,7 +442,7 @@ public class redNearTest extends NextFTCOpMode {
 
         Pose GATE_1                      = new Pose(105, 70, Math.toRadians(-29));
         Pose GATE_2                      = new Pose(115, 63, Math.toRadians(29));
-        Pose GATE_3                      = new Pose(132.3, 57.85, Math.toRadians(32));
+        Pose GATE_3                      = new Pose(133.75, 57.5, Math.toRadians(34));
         Pose GATE_SHOOT_1                = new Pose(108,    59, Math.toRadians(-29));
         Pose GATE_SHOOT_2                = new Pose(88, 79, Math.toRadians(-29));
         Pose PARK_POSE                   = new Pose(95, 71);
@@ -437,6 +450,7 @@ public class redNearTest extends NextFTCOpMode {
         public Paths(Follower follower) {
             shootPreloads = follower.pathBuilder()
                     .addPath(new BezierLine(start, new Pose(100, 122)))
+                    .setTValueConstraint(0.95)
                     .setLinearHeadingInterpolation(
                             Math.toRadians(270),
                             Math.toRadians(-98))
@@ -445,19 +459,21 @@ public class redNearTest extends NextFTCOpMode {
             intakeSpike2 = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             new Pose(100, 122),
-                            new Pose(90.98, 67),
-                            new Pose(123, 57)))
+                            new Pose(90.98, 55),
+                            new Pose(127, 60)))
                     .setTangentHeadingInterpolation()
+                    .setTValueConstraint(0.95)
                     .build();
 
             shootSpike2 = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
-                                    new Pose(123, 57),
+                                    new Pose(130, 60),
                                     GATE_SHOOT_2
                             )
                     )
                     .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-27))
+                    .setTValueConstraint(0.95)
                     .build();
 
 
@@ -468,6 +484,7 @@ public class redNearTest extends NextFTCOpMode {
                                     new Pose(123.510, 83.297)
                             )
                     )
+                    .setTValueConstraint(0.95)
                     .setTangentHeadingInterpolation()
                     .build();
 
@@ -478,6 +495,7 @@ public class redNearTest extends NextFTCOpMode {
                                     GATE_SHOOT_2
                             )
                     )
+                    .setTValueConstraint(0.95)
                     .setLinearHeadingInterpolation(Math.toRadians(7), Math.toRadians(-27))
                     .build();
 
@@ -485,14 +503,16 @@ public class redNearTest extends NextFTCOpMode {
                     .addPath(new BezierLine(GATE_SHOOT_2, new Pose(110, 68)))
                     .setTangentHeadingInterpolation()
                     .addPath(new BezierLine(new Pose(110, 68), GATE_3))
-                    .setLinearHeadingInterpolation(Math.toRadians(-27), GATE_3.getHeading(), 0.5)
+                    .setTValueConstraint(0.95)
+                    .setLinearHeadingInterpolation(Math.toRadians(-27), Math.toRadians(29), 0.5)
                     .build();
 
             quickerGate2 = follower.pathBuilder()
                     .addPath(new BezierLine(GATE_SHOOT_2, new Pose(110, 68)))
                     .setTangentHeadingInterpolation()
-                    .addPath(new BezierLine(new Pose(110, 68), new Pose(GATE_3.getX(), GATE_3.getY()+0.3)))
+                    .addPath(new BezierLine(new Pose(110, 68), new Pose(GATE_3.getX(), GATE_3.getY()+0.08)))
                     .setLinearHeadingInterpolation(Math.toRadians(-27), GATE_3.getHeading(), 0.5)
+                    .setTValueConstraint(0.95)
                     .build();
 
 
@@ -531,6 +551,7 @@ public class redNearTest extends NextFTCOpMode {
                     .setLinearHeadingInterpolation(GATE_1.getHeading(), GATE_3.getHeading())
                     .addPath(new BezierLine(GATE_2, GATE_3))
                     .setConstantHeadingInterpolation(GATE_3.getHeading())
+                    .setTValueConstraint(0.95)
                     .build();
         }
 
@@ -539,6 +560,7 @@ public class redNearTest extends NextFTCOpMode {
                     .addPath(new BezierCurve(GATE_3, GATE_SHOOT_1, GATE_SHOOT_2))
                     .setTangentHeadingInterpolation()
                     .setReversed()
+                    .setTValueConstraint(0.95)
                     .build();
         }
     }

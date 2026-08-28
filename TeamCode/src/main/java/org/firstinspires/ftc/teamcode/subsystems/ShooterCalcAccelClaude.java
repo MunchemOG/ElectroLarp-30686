@@ -250,7 +250,7 @@ public class ShooterCalcAccelClaude implements Subsystem {
     /** Width of the blend between calibration zones, inches. Replaces the hard
      *  switches, which produced a 13 degree step in commanded entry angle at
      *  x = 136 and could flip frame to frame on velocity noise. */
-    public static double zoneBlendWidth = 10.0;
+    public static double zoneBlendWidth = 2;
 
     // ---- Telemetry outputs -------------------------------------------------
     public static double requiredTPS = 0.0;
@@ -266,25 +266,25 @@ public class ShooterCalcAccelClaude implements Subsystem {
     private static final double HOOD_MAX = Math.toRadians(80);
 
     private static final double CLOSE_ZONE_END = 66.29;
-    private static final double FAR_ZONE_START = 120.0;
+    private static final double FAR_ZONE_START = 123.0;
 
     // ---- Calibration curves ------------------------------------------------
 
     /** Target height above the launch point, inches, blended across zones. */
     public static double targetHeight(double range) {
         double poly = 0.0032 * range * range - 0.6653 * range + 66.888;
-        if(range <= CLOSE_ZONE_END) return poly + 0.4;
-        if (range <= FAR_ZONE_START) return poly+0.75;
-        if (range >= FAR_ZONE_START + zoneBlendWidth) return 36.4;
+        if(range <= CLOSE_ZONE_END) return poly + 0.3;
+        if (range <= FAR_ZONE_START) return poly;
+        if (range >= FAR_ZONE_START + zoneBlendWidth) return 34.8;
         double f = (range - FAR_ZONE_START) / zoneBlendWidth;
-        return poly + (36.0 - poly) * f;
+        return (poly + (36.0 - poly) * f) - 1.8;
     }
 
     /** Desired entry angle, radians, blended across zones. */
     public static double entryAngle(double range) {
         double closeDeg = 0.6106 * range - 57.478;
         double midDeg = SCORE_ANGLE;
-        double farDeg = -36.0;
+        double farDeg = -30.0;
         double half = zoneBlendWidth / 2.0;
 
         double deg;
