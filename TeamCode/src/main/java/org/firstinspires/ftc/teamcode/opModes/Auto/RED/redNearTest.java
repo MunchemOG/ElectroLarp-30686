@@ -123,10 +123,6 @@ public class redNearTest extends NextFTCOpMode {
         return Math.max(MIN_ANGLE, Math.min(MAX_ANGLE, option1));
     }
 
-    public static MotorEx flywheel = new MotorEx("launchingmotor");
-
-    public static MotorEx flywheel2 = new MotorEx("launchingmotor2");
-
     private double normalizeDegrees(double degrees) {
         while (degrees > 180.0) {
             degrees -= 360.0;
@@ -219,8 +215,7 @@ public class redNearTest extends NextFTCOpMode {
         servoStopper.setPosition(closeStopperPos);
         double robotAngularVelocityRads = follower.getAngularVelocity();
         double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
-        //double feedforwardOffset = 0;
-        double feedforwardOffset = robotAngularVelocityDegs * 0.145;
+        double feedforwardOffset = 0;
 
         targetTurretAngle = getClosestValidTurretAngle(overriddenTurretAngle + turretOffset - feedforwardOffset);
         double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
@@ -257,7 +252,7 @@ public class redNearTest extends NextFTCOpMode {
         return new SequentialGroup(
                 setSOTMShooting,
                 new FollowPath(paths.shootPreloads, true, 1.0),
-                new Delay (0.7),
+                new Delay (0.65),
                 intakeMotorOn,
                 openStopper,
                 new Delay(0.15),
@@ -291,9 +286,9 @@ public class redNearTest extends NextFTCOpMode {
                 new FollowPath(paths.gateShoot3, true, 1.0),
 
                 // --- Gate cycle 4 ---
-                //new FollowPath(paths.gateIntake4, true, 1.0),
-                //new Delay(2.1),
-                //new FollowPath(paths.gateShoot4, true, 1.0),
+                new FollowPath(paths.gateIntake4, true, 1.0),
+                new Delay(2.1),
+                new FollowPath(paths.gateShoot4, true, 1.0),
                 //new Delay(0.3),
 
                 // --- Gate cycle 5 ---
@@ -349,8 +344,7 @@ public class redNearTest extends NextFTCOpMode {
         flywheelSpeed = results[0];
 
         if (preload == true) {
-            flywheel.setPower(1);
-            flywheel2.setPower(-1);
+            shooter((float) flywheelSpeed+40);
             turretOffset = -8;
 
         }
@@ -528,7 +522,7 @@ public class redNearTest extends NextFTCOpMode {
                     .addPath(new BezierLine(GATE_SHOOT_2, GATE_1))
                     .setTangentHeadingInterpolation()
                     .addPath(new BezierLine(GATE_1, GATE_2))
-                    .setLinearHeadingInterpolation(GATE_1.getHeading(), GATE_3.getHeading())
+                    .setLinearHeadingInterpolation(GATE_1.getHeading(), GATE_2.getHeading())
                     .addPath(new BezierLine(GATE_2, GATE_3))
                     .setConstantHeadingInterpolation(GATE_3.getHeading())
                     .build();

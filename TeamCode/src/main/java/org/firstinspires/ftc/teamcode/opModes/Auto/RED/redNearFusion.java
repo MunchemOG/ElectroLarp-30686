@@ -39,7 +39,7 @@ import dev.nextftc.hardware.impl.MotorEx;
 import dev.nextftc.hardware.impl.ServoEx;
 
 
-@Autonomous(name = "Red Close 21 Near V26")
+@Autonomous(name = "Red Close 21 Near V27")
 @Configurable
 public class redNearFusion extends NextFTCOpMode {
 
@@ -236,10 +236,20 @@ public class redNearFusion extends NextFTCOpMode {
                 })
                 .setIsDone(() -> true);
     }
+    boolean gateIntakePath = false;
+    public Command debyyyyy = new LambdaCommand()
+            .setStart(()->gateIntakePath = true);
+
+    public Command disableGateIntakegoonery = new LambdaCommand()
+            .setStart(()->gateIntakePath = false);
+    boolean lastShoot = false;
+    public Command lastTurretOffset = new LambdaCommand()
+            .setStart(()->lastShoot = true);
+
 
     public Command Auto() {
         return new SequentialGroup(
-                new Delay(1.1),
+                new Delay(1.5),
                 new FollowPath(paths.shootPreloads, true, 1.0),
                 intakeMotorOn,
                 openStopper,
@@ -258,6 +268,7 @@ public class redNearFusion extends NextFTCOpMode {
                 new Delay(0.05),
 
                 // --- Gate cycle 2 ---
+                debyyyyy,
                 new FollowPath(paths.gateIntake2, true, 1.0),
                 new Delay(2.25),
                 new FollowPath(paths.gateShoot2, true, 1.0),
@@ -266,6 +277,7 @@ public class redNearFusion extends NextFTCOpMode {
 
                 // --- Spike 1 cycle ---
                 new FollowPath(paths.intakeSpike1, true, 1.0),
+                disableGateIntakegoonery,
                 new FollowPath(paths.shootSpike1, true, 1.0),
                 new Delay(0.05),
 
@@ -278,6 +290,7 @@ public class redNearFusion extends NextFTCOpMode {
                 // --- Gate cycle 4 ---
                 new FollowPath(paths.gateIntake4, true, 1.0),
                 new Delay(2.25),
+                lastTurretOffset,
                 //new FollowPath(paths.gateShoot4, true, 1.0),
                 //new Delay(0.3),
 
@@ -331,19 +344,36 @@ public class redNearFusion extends NextFTCOpMode {
                 follower.getVelocity().times(0.8), follower.getAcceleration());
 
         flywheelSpeed = results[0];
-
+        double hoodAngle = 0;
         if (preload == true) {
             shooter(6000);
             turretOffset = -11;
+           hoodAngle = results[1]+0.02;
 
         }
 
-        if (preload == false) {
+        if (preload == false&&!gateIntakePath) {
             shooter((float) flywheelSpeed);
-            turretOffset = -12;
+            turretOffset = -20;
+            hoodAngle = results[1];
+
 
         }
-        double hoodAngle = results[1];
+        else if (gateIntakePath) {
+            shooter((float) flywheelSpeed);
+            turretOffset = -17;
+            hoodAngle = results[1];
+
+
+        }
+        else if (lastShoot) {
+            shooter((float) flywheelSpeed);
+            turretOffset = 27;
+            hoodAngle = results[1];
+
+
+        }
+
         hoodServo.setPosition(hoodAngle);
         double headingError = results[2];
         double robotAngularVelocityRads = follower.getAngularVelocity();
@@ -372,6 +402,7 @@ public class redNearFusion extends NextFTCOpMode {
 
         Storage.setPose = true;
     }
+
 
     @Override
     public void onStop() {
@@ -407,7 +438,7 @@ public class redNearFusion extends NextFTCOpMode {
 
         Pose GATE_1                      = new Pose(105, 70, Math.toRadians(-29));
         Pose GATE_2                      = new Pose(115, 63, Math.toRadians(29));
-        Pose GATE_3                      = new Pose(132.85, 58.5, Math.toRadians(36.5));
+        Pose GATE_3                      = new Pose(133.85, 58.5, Math.toRadians(34.5));
         Pose GATE_SHOOT_1                = new Pose(108, 59, Math.toRadians(-29));
         Pose GATE_SHOOT_2                = new Pose(88, 79, Math.toRadians(-29));
         Pose PARK_POSE                   = new Pose(95, 71);
@@ -498,6 +529,7 @@ public class redNearFusion extends NextFTCOpMode {
                     .setLinearHeadingInterpolation(GATE_1.getHeading(), GATE_2.getHeading())
                     .addPath(new BezierLine(GATE_2, GATE_3))
                     .setConstantHeadingInterpolation(GATE_3.getHeading())
+                    .setTValueConstraint(0.95)
                     .build();
         }
 
@@ -505,6 +537,7 @@ public class redNearFusion extends NextFTCOpMode {
             return follower.pathBuilder()
                     .addPath(new BezierCurve(GATE_3, GATE_SHOOT_1, GATE_SHOOT_2))
                     .setTangentHeadingInterpolation()
+                    .setTValueConstraint(0.95)
                     .setReversed()
                     .build();
         }
