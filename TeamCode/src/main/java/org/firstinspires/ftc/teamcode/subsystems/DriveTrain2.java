@@ -212,9 +212,8 @@ public class DriveTrain2 implements Subsystem {
 
     private ServoImplEx turret1;
     private ServoImplEx turret2;
-
-    public static double turretOffset = 0;
-    public static double turretOffset2 = 0;
+    public static double turretOffset = 15;
+    public static double turretOffset2 = -15;
     public static double turretOffsetStep = -5;
     // Inches from the Pinpoint/Pedro robot pose origin to the turret pivot.
     public static double turretForwardOffset = -0.52588;
