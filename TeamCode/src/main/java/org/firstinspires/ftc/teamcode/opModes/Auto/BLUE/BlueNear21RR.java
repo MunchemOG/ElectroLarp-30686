@@ -215,7 +215,7 @@ public class BlueNear21RR extends NextFTCOpMode {
         isOverridden = true;
         preload = true;
 
-        overriddenTurretAngle = getClosestValidTurretAngle(160);
+        overriddenTurretAngle = getClosestValidTurretAngle(-160);
         double hoodAngle = 0.4;
         hoodServo.setPosition(hoodAngle);
         servoStopper.setPosition(closeStopperPos);
@@ -259,6 +259,11 @@ public class BlueNear21RR extends NextFTCOpMode {
             intakeMotorOn,
             new Delay(0.27),
             closeStopper);
+    boolean gateBool = false;
+    public Command gate = new LambdaCommand()
+            .setStart(()->gateBool=true);
+    public Command noGate = new LambdaCommand()
+            .setStart(()->gateBool=false);
 
     public Command Auto() {
         return new SequentialGroup(
@@ -283,6 +288,7 @@ public class BlueNear21RR extends NextFTCOpMode {
 
                 // --- Gate cycle 1 ---
                 new FollowPath(paths.quickerGate, true, 1.0),
+                gate,
                 setBrakeShooting,
                 new Delay(1.25),
                 new FollowPath(paths.gateShoot1, true, 1.0),
@@ -297,11 +303,13 @@ public class BlueNear21RR extends NextFTCOpMode {
 
                 // --- Spike 1 cycle ---
                 new FollowPath(paths.intakeSpike1, true, 1.0),
+                noGate,
                 new FollowPath(paths.shootSpike1, true, 1.0),
                 shoot,
 
                 // --- Gate cycle 3 ---
                 new FollowPath(paths.quickerGate2, true, 1.0),
+                gate,
                 new Delay(1.25),
                 new FollowPath(paths.gateShoot3, true, 1.0),
                 shoot,
@@ -319,6 +327,7 @@ public class BlueNear21RR extends NextFTCOpMode {
 //                new Delay(0.3),
 
                 //new FollowPath(paths.park, true, 1.0)
+                noGate,
                 new FollowPath(paths.lastGateWithPark, true, 1.0),
                 new Delay(0.125),//make this faster
                 shoot
@@ -371,9 +380,13 @@ public class BlueNear21RR extends NextFTCOpMode {
 
         }
 
-        if (preload == false) {
+        if (preload == false&&!gateBool) {
             shooter((float) flywheelSpeed);
             turretOffset = -9;
+
+        }
+        if(gateBool){
+            turretOffset = -12;
 
         }
         double hoodAngle = results[1];
@@ -447,7 +460,7 @@ public class BlueNear21RR extends NextFTCOpMode {
         Pose GATE_2                      = new Pose(29, 63, Math.toRadians(151));
         Pose GATE_3                      = new Pose(10.25, 57.5, Math.toRadians(146));
         Pose GATE_SHOOT_1                = new Pose(36, 59, Math.toRadians(-151));
-        Pose GATE_SHOOT_2                = new Pose(56, 79, Math.toRadians(-151));
+        Pose GATE_SHOOT_2                = new Pose(54, 79, Math.toRadians(-151));
         Pose PARK_POSE                   = new Pose(49, 71);
 
         public Paths(Follower follower) {

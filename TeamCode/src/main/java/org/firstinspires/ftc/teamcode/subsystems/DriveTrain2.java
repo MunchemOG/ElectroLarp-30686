@@ -213,7 +213,7 @@ public class DriveTrain2 implements Subsystem {
     private ServoImplEx turret1;
     private ServoImplEx turret2;
     public static double turretOffset = 15;
-    public static double turretOffset2 = -15;
+    public static double turretOffset2 = 10;
     public static double turretOffsetStep = -5;
     // Inches from the Pinpoint/Pedro robot pose origin to the turret pivot.
     public static double turretForwardOffset = -0.52588;
@@ -659,7 +659,7 @@ public class DriveTrain2 implements Subsystem {
                 writer.write(String.format(
                         "%.4f,%.2f,%.1f,%.1f,%.4f,%.1f,%.2f,%.1f,%.2f,%.4f,%.4f,%d,%.2f,%.4f,%.0f,%.4f,%.2f,%.2f,%.4f,%.2f,%d%n",
                         t, speed, aRaw, aFilt, omega, loopMs,
-                        lastHeadingError, cmdRate, targetTurretAngle,
+                        lastH eadingError, cmdRate, targetTurretAngle,
                         lastLoggedServoSignal, lastServoPos,
                         shooting ? 1 : 0,
                         ShooterCalcAccelClaude.lastProjectedSpeed,
@@ -783,7 +783,7 @@ public class DriveTrain2 implements Subsystem {
             lastCmdAngle = cmdForRate;
             lastCmdNanos = cmdNanos;
         }*/
-
+//ayush is a gay person (happy) cause
         double commandedAngle = headingError + allianceOffset - feedforwardOffset;
 
         if (turretParked) {
@@ -844,7 +844,7 @@ public class DriveTrain2 implements Subsystem {
         }
 
         if(autoShoot==true) {
-            Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.18), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.18), follower.getHeading());
+            Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.1), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.1), follower.getHeading());
             if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 45 || shooting==true) {
                 intakeMotor.setPower(1);
                 transfer.setPower(1);

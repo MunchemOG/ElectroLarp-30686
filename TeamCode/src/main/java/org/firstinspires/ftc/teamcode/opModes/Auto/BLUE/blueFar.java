@@ -260,7 +260,7 @@ public class blueFar extends NextFTCOpMode {
     public Command Auto() {
         return new SequentialGroup(
                 disablePreload,
-                new Delay(2.5),
+                new Delay(4),
                 // Preload shot happens from the start pose — FarAuto.shootPreloads() never
                 // drives before shooting, so there's no leading FollowPath here (unlike
                 // blue24Near's FollowPath(paths.Preload,...)).
@@ -325,6 +325,8 @@ public class blueFar extends NextFTCOpMode {
             .setStart(() -> preload = false);
     private double flywheelSpeed;
 
+
+
     @Override
     public void onUpdate() {
 
@@ -349,48 +351,40 @@ public class blueFar extends NextFTCOpMode {
         Double[] results = calculateShotVectorandUpdateHeading(
                 robotHeading,
                 robotToGoalVector,
-                follower.getVelocity().times(1.0), follower.getAcceleration());
+                follower.getVelocity(), follower.getAcceleration());
 
         flywheelSpeed = results[0];
 
-        if (preload == true) {
-            double hoodAngle = results[1];
-            hoodServo.setPosition(hoodAngle);
-            shooter((float) -(flywheelSpeed + 30));
-            double robotAngularVelocityRads = follower.getAngularVelocity();
-            double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
-            double feedforwardOffset = 0;
 
-            targetTurretAngle = getClosestValidTurretAngle(overriddenTurretAngle - turretOffset - feedforwardOffset);
-            double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
-            servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
+        shooter((float) flywheelSpeed);
+        turretOffset = -8;
 
-            turret1.setPosition(servoPositionSignal + servoOffset);
-            turret2.setPosition(servoPositionSignal - servoOffset);
-            double lastServoPos = servoPositionSignal;
 
-            currentTurretPos = targetTurretAngle;
 
-        }
+        double hoodAngle = results[1];
+        hoodServo.setPosition(hoodAngle);
+        double headingError = results[2];
+        double robotAngularVelocityRads = follower.getAngularVelocity();
+        double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
+        double feedforwardOffset = robotAngularVelocityDegs * 0;
+        targetTurretAngle = getClosestValidTurretAngle(headingError - turretOffset /*- feedforwardOffset*/);
+        double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
+        servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
 
-        if (preload == false) {
-            shooter((float) flywheelSpeed);
-            double hoodAngle = results[1];
-            hoodServo.setPosition(hoodAngle);
-            double headingError = results[2];
-            double robotAngularVelocityRads = follower.getAngularVelocity();
-            double robotAngularVelocityDegs = Math.toDegrees(robotAngularVelocityRads);
-            double feedforwardOffset = robotAngularVelocityDegs * 0.115;
-            targetTurretAngle = getClosestValidTurretAngle(headingError - turretOffset - feedforwardOffset);
-            double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
-            servoPositionSignal = Math.max(0.05, Math.min(0.95, servoPositionSignal));
+        turret1.setPosition(servoPositionSignal + servoOffset);
+        turret2.setPosition(servoPositionSignal - servoOffset);
 
-            turret1.setPosition(servoPositionSignal + servoOffset);
-            turret2.setPosition(servoPositionSignal - servoOffset);
+        currentTurretPos = targetTurretAngle;
 
-            currentTurretPos = targetTurretAngle;
-        }
+        Pose futurepose = new Pose(follower.getPose().getX() + (follower.getVelocity().getXComponent() * 0.2), follower.getPose().getY() + (follower.getVelocity().getYComponent() * 0.2), follower.getHeading());
 
+        /*if (isOverlappingLaunchZone(futurepose) && robotToGoalVector.getMagnitude() > 40 && preload==false) {
+            intakeMotor.setPower(1);
+            transfer.setPower(1);
+            openStopper.schedule();
+        } else {
+            closeStopper.schedule();
+        }*/
 
         Storage.currentPose = follower.getPose();
 

@@ -100,7 +100,7 @@ public class redFar extends NextFTCOpMode {
     private ServoImplEx turret1;
     private ServoImplEx turret2;
 
-    public static double turretOffset = 1;
+    public static double turretOffset = 31;
     public static double turretOffset2 = 0;
     public static double turretOffsetStep = -5;
 
@@ -304,10 +304,11 @@ public class redFar extends NextFTCOpMode {
 
     public Command Auto() {
         return new SequentialGroup(
-                disablePreload,
-                new Delay(1.3),
+
+                new Delay(3.5),
                 shoot,
                 intakeMotorOn,
+                disablePreload,
                 // --- Spike 1 cycle ---
                 new FollowPath(paths.intakeSpike1, true, 1.0),
                 new Delay(0.3),
@@ -400,7 +401,7 @@ public class redFar extends NextFTCOpMode {
             shooter((float) -(flywheelSpeed + 30));
             double feedforwardOffset = 0;
 
-            double rawTarget = getClosestValidTurretAngle(overriddenTurretAngle - turretOffset - feedforwardOffset);
+            double rawTarget = getClosestValidTurretAngle(overriddenTurretAngle + turretOffset - feedforwardOffset);
             targetTurretAngle = slewTurret(rawTarget);
 
             double servoPositionSignal = 0.05 + ((targetTurretAngle - MIN_ANGLE) / 449.51) * 0.90;
@@ -490,7 +491,7 @@ public class redFar extends NextFTCOpMode {
         // for those.
 
         //====Change these only para paths egg=================
-        Pose FIRST_SPIKE = new Pose(120, 45, Math.toRadians(90));
+        Pose FIRST_SPIKE = new Pose(122, 45, Math.toRadians(90));
         Pose FIRST_SPIKE_CONTROL = new Pose(119, 20.5);
         Pose FIRST_SHOOT = new Pose(98, 14);
         Pose FIRST_SHOOT_CONTROL = new Pose(120.5, 16);

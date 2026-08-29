@@ -85,7 +85,7 @@ public class    redNear21RR extends NextFTCOpMode {
     private ServoImplEx turret1;
     private ServoImplEx turret2;
 
-    public static double turretOffset = -5;
+    public static double turretOffset = -3;
     public static double turretOffset2 = 2;
     public static double turretOffsetStep = -5;
 
@@ -445,7 +445,7 @@ public class    redNear21RR extends NextFTCOpMode {
 
         Pose GATE_1                      = new Pose(105, 70, Math.toRadians(-29));
         Pose GATE_2                      = new Pose(115, 63, Math.toRadians(29));
-        Pose GATE_3                      = new Pose(133.75, 57.5, Math.toRadians(34));
+        Pose GATE_3                      = new Pose(134, 57.45, Math.toRadians(34));
         Pose GATE_SHOOT_1                = new Pose(108,    59, Math.toRadians(-29));
         Pose GATE_SHOOT_2                = new Pose(88, 79, Math.toRadians(-29));
         Pose PARK_POSE                   = new Pose(95, 71);
