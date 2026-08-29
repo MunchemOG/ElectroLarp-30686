@@ -853,7 +853,7 @@ public class DriveTrain2 implements Subsystem {
             } else {
                 if(turnedOff==false) {
                     closeStopper.schedule();
-                    if(Gamepads.gamepad1().rightTrigger().get()<0.3) {
+                    if(Gamepads.gamepad1().leftTrigger().get()<0.3) {
                         intakeMotor.setPower(0);
                         transfer.setPower(0);
                     }
