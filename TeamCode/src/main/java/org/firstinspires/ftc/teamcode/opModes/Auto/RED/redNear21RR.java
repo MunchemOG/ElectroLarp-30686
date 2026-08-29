@@ -42,7 +42,7 @@ import dev.nextftc.hardware.impl.ServoEx;
 
 @Autonomous(name = "Red Close 21 RR")
 @Configurable
-public class redNear21RR extends NextFTCOpMode {
+public class    redNear21RR extends NextFTCOpMode {
 
     public redNear21RR() {
         addComponents(
@@ -263,8 +263,9 @@ public class redNear21RR extends NextFTCOpMode {
     public Command Auto() {
         return new SequentialGroup(
                 setSOTMShooting,
+                //-126
                 new FollowPath(paths.shootPreloads, true, 1.0),
-                new Delay (0.9),
+                new Delay (1),
                 intakeMotorOn,
                 openStopper,
                 new Delay(0.275),
@@ -275,19 +276,21 @@ public class redNear21RR extends NextFTCOpMode {
                 // --- Spike 2 cycle ---
                 new FollowPath(paths.intakeSpike2, true, 1.0),
                 //setBrakeShooting,
+                //-70
+
                 new FollowPath(paths.shootSpike2, true, 1.0),
                 shoot,
 
                 // --- Gate cycle 1 ---
                 new FollowPath(paths.quickerGate, true, 1.0),
                 setBrakeShooting,
-                new Delay(1.35),
+                new Delay(1.25),
                 new FollowPath(paths.gateShoot1, true, 1.0),
                 shoot,
 
                 // --- Gate cycle 2 ---
                 new FollowPath(paths.gateIntake2, false, 1.0),
-                new Delay(2.45),
+                new Delay(2.25),
                 new FollowPath(paths.gateShoot2, true, 1.0),
                 shoot,
 
@@ -299,7 +302,7 @@ public class redNear21RR extends NextFTCOpMode {
 
                 // --- Gate cycle 3 ---
                 new FollowPath(paths.quickerGate2, true, 1.0),
-                new Delay(1.35),
+                new Delay(1.25),
                 new FollowPath(paths.gateShoot3, true, 1.0),
                 shoot,
 
@@ -311,7 +314,7 @@ public class redNear21RR extends NextFTCOpMode {
 
                 // --- Gate cycle 5 ---
                 new FollowPath(paths.gateIntake5, false, 1.0),
-                new Delay(2.5),
+                new Delay(2.25),
                 //new FollowPath(paths.gateShoot5, true, 1.0),
 //                new Delay(0.3),
 
@@ -459,21 +462,23 @@ public class redNear21RR extends NextFTCOpMode {
             intakeSpike2 = follower.pathBuilder()
                     .addPath(new BezierCurve(
                             new Pose(100, 122),
-                            new Pose(90.98, 55),
-                            new Pose(127, 60)))
-                    .setTangentHeadingInterpolation()
-                    .setTValueConstraint(0.95)
+                            new Pose(90.98, 59.7),
+                            new Pose(123, 59.5)))
+                    .setLinearHeadingInterpolation(
+                            Math.toRadians(240),
+                            Math.toRadians(20))
                     .build();
 
             shootSpike2 = follower.pathBuilder()
                     .addPath(
                             new BezierLine(
-                                    new Pose(130, 60),
+                                    new Pose(123, 59.5),
                                     GATE_SHOOT_2
                             )
                     )
-                    .setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(-27))
+                    .setLinearHeadingInterpolation(Math.toRadians(20), Math.toRadians(-27))
                     .setTValueConstraint(0.95)
+                    .addPoseCallback(new Pose(102.523,71.095),intakeMotorOff,0.6)
                     .build();
 
 
@@ -497,6 +502,7 @@ public class redNear21RR extends NextFTCOpMode {
                     )
                     .setTValueConstraint(0.95)
                     .setLinearHeadingInterpolation(Math.toRadians(7), Math.toRadians(-27))
+                    .addPoseCallback(new Pose(105.676,81.139),intakeMotorOff,0.6)
                     .build();
 
             quickerGate = follower.pathBuilder()
@@ -560,6 +566,7 @@ public class redNear21RR extends NextFTCOpMode {
                     .addPath(new BezierCurve(GATE_3, GATE_SHOOT_1, GATE_SHOOT_2))
                     .setTangentHeadingInterpolation()
                     .setReversed()
+                    .addTemporalCallback(0.5,intakeMotorOff)
                     .setTValueConstraint(0.95)
                     .build();
         }
