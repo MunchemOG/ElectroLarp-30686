@@ -43,7 +43,7 @@ public class blueFar extends IvyOpMode {
     private static final PoseFactory POSES = PoseFactory.radians();
 
     public blueFar() {
-        configurePedro(Constants::create);
+       // configurePedro(Constants::create);
     }
 
     private TeamFollower follower;

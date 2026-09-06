@@ -455,7 +455,7 @@ public class redFar extends IvyOpMode {
 
             shootSpike2 = withCallbacks(
 line(SECOND_SPIKE, SECOND_SHOOT).constant(SECOND_SPIKE.heading()),
-temporalCallback(150, intakeMotorOff)
+poseCallback(new Pose(0,0,0), intakeMotorOff,1)
 );
 
             //js goon cycle sweep

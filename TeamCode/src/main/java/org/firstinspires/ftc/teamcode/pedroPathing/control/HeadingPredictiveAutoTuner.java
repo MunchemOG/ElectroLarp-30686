@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.control;
 
 import static com.pedropathing.utils.Utils.linearFit;
-import static org.firstinspires.ftc.teamcode.pedroPathing.Constants.foresightConfig;
 
 import android.annotation.SuppressLint;
 import com.pedropathing.follower.Follower;
@@ -16,13 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @TeleOp(group = "3")
-public class ForwardTranslationalAutoTuner extends OpMode {
-    public static double ALPHA_LARGE = 10.2;
-    public static double ALPHA_SMALL = 6.2;
-    public static double VEL_AGGRESSIVENESS = 0.85;
+public class HeadingPredictiveAutoTuner extends OpMode {
+    public static double ALPHA = 19.5;
 
     private static final double POWER = 0.4;
-    private static final double RUNTIME = 1.2;
+    private static final double RUNTIME = 3;
     private static final int SAMPLES = 15;
 
     private double tau;
@@ -58,7 +55,7 @@ public class ForwardTranslationalAutoTuner extends OpMode {
         follower.setPose(Pose.zero());
         timer.reset();
         lastTime = timer.seconds();
-        follower.manual(POWER, 0, 0);
+        follower.manual(0, 0, POWER);
         follower.update();
     }
 
@@ -80,10 +77,10 @@ public class ForwardTranslationalAutoTuner extends OpMode {
         if (!done) {
             times.add(timer.seconds());
 
-            double forwardVelocity = Math.abs(follower.twist().toVector2D().x());
-            vMax = Math.max(vMax, forwardVelocity / POWER);
+            double turnVel = Math.abs(follower.twist().omega);
+            vMax = Math.max(vMax, turnVel / POWER);
 
-            velocities.add(forwardVelocity);
+            velocities.add(turnVel);
             telemetry.addData("velocity (in/s)", String.format("%.4f", velocities.get(velocities.size() - 1)));
 
             if (timer.seconds() >= RUNTIME) {
@@ -93,21 +90,18 @@ public class ForwardTranslationalAutoTuner extends OpMode {
                 follower.manual(0, 0, 0);
                 telemetry.addData("elapsed time (s)", String.format("%.4f", timer.seconds()));
             } else {
-                follower.manual(POWER, 0, 0);
+                follower.manual(0, 0, POWER);
                 return;
             }
         }
 
-        double kP_large = calculatekP(ALPHA_LARGE);
-        double kP_small = calculatekP(ALPHA_SMALL);
+        double kP_large = calculatekP(ALPHA);
 
         telemetry.addData("Est tau (s)", String.format("%.4f", tau));
         telemetry.addData("Est K (in/s per power)", String.format("%.4f", K));
         telemetry.addData("Est kV", kV);
         telemetry.addData("Est kA", kA);
-        telemetry.addData("Primary Forward Translational", "kP=" + String.format("%.4f", kP_large));
-        telemetry.addData("Secondary Forward Translational", "kP=" + String.format("%.4f", kP_small));
-        telemetry.addData("Drive Feedforward", "kV=" + String.format("%.4f", kV * VEL_AGGRESSIVENESS));
+        telemetry.addData("Primary Heading Coefficients", "kP=" + String.format("%.4f", kP_large));
     }
 
     private double calculatekP(double alpha) {

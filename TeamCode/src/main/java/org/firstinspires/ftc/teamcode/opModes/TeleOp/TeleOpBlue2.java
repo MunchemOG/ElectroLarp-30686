@@ -19,7 +19,7 @@ public class TeleOpBlue2 extends IvyOpMode {
     public MotorEx transfer;
 
     public TeleOpBlue2() {
-        configurePedro(Constants::create, DriveTrain2.INSTANCE);
+        //configurePedro(Constants::create, DriveTrain2.INSTANCE);
     }
 
     public static boolean blue;

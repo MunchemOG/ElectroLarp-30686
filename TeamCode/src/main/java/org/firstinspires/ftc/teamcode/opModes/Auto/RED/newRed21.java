@@ -240,6 +240,8 @@ public class newRed21 extends IvyOpMode {
     public Command Auto() {
         return sequential(
 
+
+
                 waitMs((1.1) * 1000.0),
                 follow(follower, paths.shootPreloads, true, 1.0),
                 intakeMotorOn,

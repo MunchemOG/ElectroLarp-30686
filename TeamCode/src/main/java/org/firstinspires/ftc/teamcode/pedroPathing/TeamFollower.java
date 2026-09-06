@@ -10,7 +10,7 @@ import com.pedropathing.math.Velocity;
 
 import static org.firstinspires.ftc.teamcode.pedroPathing.Poses.pose;
 
-/** Pedro 3 follower with project-specific velocity/acceleration conveniences. */
+
 public class TeamFollower extends Follower {
     private final ForesightConfig foresightConfig;
     private PolarVector acceleration = new PolarVector();

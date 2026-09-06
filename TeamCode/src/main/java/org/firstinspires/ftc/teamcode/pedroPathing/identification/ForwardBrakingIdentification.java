@@ -1,12 +1,22 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.identification;
 
+import static com.pedropathing.utils.Angle.normalizeSigned;
+import static com.pedropathing.utils.Utils.quadraticFit;
+
 import android.annotation.SuppressLint;
 
+import com.pedropathing.algorithm.ForesightConfig;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.localization.Localizer;
+import com.pedropathing.math.Pose;
 import com.pedropathing.math.Vector2D;
+import com.pedropathing.utils.Angle;
+import com.pedropathing.utils.Utils;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 import java.util.ArrayList;
@@ -25,15 +35,17 @@ import java.util.List;
 @TeleOp(group = "2")
 public class ForwardBrakingIdentification extends OpMode {
     private static double[] POWERS;
+    public static double MAX_BRAKE_TIME = 5; //seconds, the robot shouldn't take longer than this to brake
 
     public static int trials = 12;
-    public static double maxPower = 1;
+    public static double maxPower = 0.7;
     public static double minPower = 0.2;
     public static double bias = 1.5; // how much it favors doing trials with higher powers
     public static double brakingPower = 0.001;
     public static int TILES_IN_FRONT_OF_ROBOT = 3; // Must be at least 3
-    public static double headingP = 1.5;
-    public static double headingD = 0.1;
+    public static double IDLE_SECONDS = 1; //if your robot tips, increase this to add more delay between trials
+
+    private final ElapsedTime timer = new ElapsedTime();
 
     private final List<double[]> velocityToBrakingDistance = new ArrayList<>();
     private State state = State.DRIVE;
@@ -52,10 +64,17 @@ public class ForwardBrakingIdentification extends OpMode {
         POWERS = biasedGradient(trials, maxPower, minPower, bias);
 
         follower = Constants.create(hardwareMap);
+        follower.setPose(Pose.zero());
+        follower.update();
         voltageSensor = hardwareMap.getAll(VoltageSensor.class).iterator().next();
 
-        follower.update();
         recordBrakeData();
+    }
+
+    @Override
+    public void start() {
+        follower.setPose(Pose.zero());
+        follower.update();
     }
 
     @Override
@@ -69,17 +88,18 @@ public class ForwardBrakingIdentification extends OpMode {
     }
 
     private double getHeadingPower() {
-        return headingP * angleWrap(0 - follower.pose().heading()) - headingD * follower.velocity().omega;
+        double angularVel = follower.velocity().omega;
+        double brakeDist = Constants.foresightConfig.headingBrakeCoefficients.get().x() * angularVel +
+                Constants.foresightConfig.headingBrakeCoefficients.get().y() * angularVel * angularVel * Math.signum(angularVel);
+        double headingError = Angle.normalizeSigned(-follower.pose().heading());
+        double error = headingError - brakeDist;
+        return Utils.clamp(Constants.foresightConfig.headingFeedback.get().plus(Constants.foresightConfig.headingStaticFF.get())
+                .calculate(0, error, 0), -0.3, 1.0) / 2;
     }
+
 
     private void drive() {
         follower.manual(power * direction, 0.0, getHeadingPower());
-    }
-
-    private static double angleWrap(double angle) {
-        while (angle <= -Math.PI) angle += 2 * Math.PI;
-        while (angle > Math.PI) angle -= 2 * Math.PI;
-        return angle;
     }
 
     private void brake() {
@@ -140,18 +160,23 @@ public class ForwardBrakingIdentification extends OpMode {
 
                     brake();
                     state = State.BRAKE;
+                    timer.reset();
                     break;
                 }
                 drive();
                 break;
             }
             case BRAKE: {
-                if (follower.velocity().toVector2D().magnitude() > 0.001) {
+                if (follower.velocity().toVector2D().magnitude() > Constants.foresightConfig.velocityConstraint.get() && timer.seconds() < MAX_BRAKE_TIME) {
                     brake();
                     break;
                 }
 
                 collectTrialData();
+                break;
+            }
+            case WAIT: {
+                if (timer.seconds() > IDLE_SECONDS) state = State.DRIVE;
                 break;
             }
             case DONE: {}
@@ -184,47 +209,15 @@ public class ForwardBrakingIdentification extends OpMode {
 
             state = State.DONE;
         } else {
-            state = State.DRIVE;
+            state = State.WAIT;
+            timer.reset();
         }
-    }
-
-    public static double[] quadraticFit(List<double[]> samples) {
-        double s11 = 0.0;
-        double s12 = 0.0;
-        double s22 = 0.0;
-
-        double t1 = 0.0;
-        double t2 = 0.0;
-
-        for (double[] sample : samples) {
-            double v = sample[0];
-            double d = sample[1];
-
-            double x1 = v;
-            double x2 = v * v;
-
-            s11 += x1 * x1;
-            s12 += x1 * x2;
-            s22 += x2 * x2;
-
-            t1 += x1 * d;
-            t2 += x2 * d;
-        }
-
-        double det = s11 * s22 - s12 * s12;
-        if (Math.abs(det) < 1e-12) {
-            throw new IllegalArgumentException("Regression matrix is singular.");
-        }
-
-        double b = (t1 * s22 - t2 * s12) / det;
-        double a = (s11 * t2 - s12 * t1) / det;
-
-        return new double[]{b, a};
     }
 
     private enum State {
         DRIVE,
         BRAKE,
+        WAIT,
         DONE
     }
 

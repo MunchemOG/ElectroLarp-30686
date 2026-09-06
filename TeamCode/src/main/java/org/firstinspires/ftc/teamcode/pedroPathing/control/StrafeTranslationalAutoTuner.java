@@ -1,13 +1,11 @@
 package org.firstinspires.ftc.teamcode.pedroPathing.control;
 
-import static org.firstinspires.ftc.teamcode.pedroPathing.Constants.foresightConfig;
+import static com.pedropathing.utils.Utils.linearFit;
 
 import android.annotation.SuppressLint;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.math.Pose;
-import com.pedropathing.math.Vector2D;
-import com.pedropathing.utils.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -19,8 +17,8 @@ import java.util.List;
 
 @TeleOp(group = "3")
 public class StrafeTranslationalAutoTuner extends OpMode {
-    public static double BETA_LARGE = 0.6;
-    public static double BETA_SMALL = 0.9;
+    public static double ALPHA_LARGE = 7.6;
+    public static double ALPHA_SMALL = 4.4;
 
     private static final double POWER = 0.4;
     private static final double RUNTIME = 1.2;
@@ -55,9 +53,11 @@ public class StrafeTranslationalAutoTuner extends OpMode {
 
     @Override
     public void start() {
+        follower.setPose(Pose.zero());
         timer.reset();
         lastTime = timer.seconds();
         follower.manual(0, POWER, 0);
+        follower.update();
     }
 
     @SuppressLint("DefaultLocale")
@@ -95,26 +95,21 @@ public class StrafeTranslationalAutoTuner extends OpMode {
             }
         }
 
-        double kP_large = calculatekP(BETA_LARGE);
-        double kP_small = calculatekP(BETA_SMALL);
+        double kP_large = calculatekP(ALPHA_LARGE);
+        double kP_small = calculatekP(ALPHA_SMALL);
 
         telemetry.addData("Est tau (s)", String.format("%.4f", tau));
         telemetry.addData("Est K (in/s per power)", String.format("%.4f", K));
         telemetry.addData("Est kV", kV);
         telemetry.addData("Est kA", kA);
-        telemetry.addData("Large Coefficients", "kP=" + String.format("%.4f", kP_large));
-        telemetry.addData("Small Coefficients", "kP=" + String.format("%.4f", kP_small));
+        telemetry.addData("Primary Strafe Translational", "kP=" + String.format("%.4f", kP_large));
+        telemetry.addData("Secondary Strafe Translational", "kP=" + String.format("%.4f", kP_small));
     }
 
-    private double calculatekP(double beta) {
+    private double calculatekP(double alpha) {
         kV = 1 / K;
-        kA = tau / K * beta;
-        double denominator = foresightConfig.linearBrakeCoefficients.get().get(1,1) + 2.0 * foresightConfig.quadraticBrakeCoefficients.get().get(1,1) * vMax;
-        double discriminant = kA - kV * denominator;
-
-        if (discriminant < 0) return kV * kV / (4.0 * kA);
-        double sqrt = (Math.sqrt(kA) - Math.sqrt(discriminant)) / denominator;
-        return sqrt * sqrt;
+        kA = tau / K;
+        return tau * alpha * alpha / K;
     }
 
     private void systemIdentification() {
@@ -142,21 +137,5 @@ public class StrafeTranslationalAutoTuner extends OpMode {
         double[] linReg = linearFit(x.toArray(new Double[0]), y.toArray(new Double[0]));
         if (linReg[1] == 0) throw new IllegalArgumentException("Failed calibration.");
         this.tau = -1.0/linReg[1];
-    }
-
-    public double[] linearFit(Double[] x, Double[] y) {
-        int n = x.length;
-        double sumX = 0, sumXY = 0, sumY = 0, sumX2 = 0;
-
-        for (int i = 0; i < n; i++) {
-            sumX += x[i];
-            sumY += y[i];
-            sumXY += x[i] * y[i];
-            sumX2 += x[i] * x[i];
-        }
-
-        double m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-        double b = (sumY - m * sumX) / n;
-        return new double[] {b, m};
     }
 }

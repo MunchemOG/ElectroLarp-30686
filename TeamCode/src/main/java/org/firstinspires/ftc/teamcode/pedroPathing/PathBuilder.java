@@ -11,7 +11,7 @@ import java.util.List;
 import static com.pedropathing.api.Paths.path;
 
 /** Pedro 2 path-builder surface translated onto Pedro 3 immutable Path factories. */
-public final class PathBuilder {
+public final class  PathBuilder {
     private final ForesightConfig config;
     private final List<Path> paths = new ArrayList<>();
     private final List<PathCallbacks.Callback> callbacks = new ArrayList<>();
