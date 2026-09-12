@@ -5,7 +5,7 @@ import com.pedropathing.math.Pose;
 
 /** Shared radians-based pose factory used by robot code and generated paths. */
 public final class Poses {
-    private static final PoseFactory RADIANS = PoseFactory.radians();
+    private static final PoseFactory RADIANS = PoseFactory.radians(); 
 
     private Poses() { }
     public static Pose pose(double x, double y) { return RADIANS.of(x, y, 0); }
