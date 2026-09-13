@@ -1,16 +1,13 @@
 package org.firstinspires.ftc.teamcode.opModes.Auto.RED;
 
-import static com.pedropathing.api.Paths.*;
-
-import com.pedropathing.api.PoseFactory;
-import com.pedropathing.ivy.Command;
-import org.firstinspires.ftc.teamcode.ivy.*;
-import org.firstinspires.ftc.teamcode.pedroPathing.*;
-
-import static com.pedropathing.ivy.commands.Commands.*;
-import static com.pedropathing.ivy.groups.Groups.*;
-import static org.firstinspires.ftc.teamcode.ivy.HardwareCommands.*;
-import static org.firstinspires.ftc.teamcode.opModes.Auto.AutoPathRuntime.*;
+import static com.pedropathing.api.Paths.curve;
+import static com.pedropathing.api.Paths.line;
+import static com.pedropathing.api.Paths.path;
+import static com.pedropathing.ivy.commands.Commands.waitMs;
+import static com.pedropathing.ivy.groups.Groups.sequential;
+import static org.firstinspires.ftc.teamcode.opModes.Auto.AutoPathRuntime.follow;
+import static org.firstinspires.ftc.teamcode.opModes.Auto.AutoPathRuntime.poseCallback;
+import static org.firstinspires.ftc.teamcode.opModes.Auto.AutoPathRuntime.withCallbacks;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.closeStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.openStopperPos;
 import static org.firstinspires.ftc.teamcode.subsystems.DriveTrain2.servoOffset;
@@ -18,31 +15,37 @@ import static org.firstinspires.ftc.teamcode.subsystems.Flywheel.shooter;
 import static org.firstinspires.ftc.teamcode.subsystems.LaunchDetector.isOverlappingLaunchZone;
 import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.calculateShotVectorandUpdateHeading;
 
-import com.bylazar.configurables.annotations.Configurable;
-import org.firstinspires.ftc.teamcode.pedroPathing.TeamFollower;
+import com.pedropathing.api.PoseFactory;
+import com.pedropathing.ivy.Command;
 import com.pedropathing.math.Pose;
-import org.firstinspires.ftc.teamcode.pedroPathing.PolarVector;
 import com.pedropathing.paths.Path;
-
-import org.firstinspires.ftc.teamcode.pedroPathing.Timer;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 
+import org.firstinspires.ftc.teamcode.ivy.IvyOpMode;
+import org.firstinspires.ftc.teamcode.ivy.LambdaCommand;
+import org.firstinspires.ftc.teamcode.ivy.MotorEx;
+import org.firstinspires.ftc.teamcode.ivy.RobotContext;
+import org.firstinspires.ftc.teamcode.ivy.ServoEx;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.PedroRuntime;
+import org.firstinspires.ftc.teamcode.pedroPathing.PolarVector;
+import org.firstinspires.ftc.teamcode.pedroPathing.TeamFollower;
+import org.firstinspires.ftc.teamcode.pedroPathing.Timer;
 import org.firstinspires.ftc.teamcode.subsystems.Storage;
 
 import java.util.List;
 
 
-@Autonomous(name = "Red New V31111")
+@Autonomous(name = "Pedro 3 Test")
 
-public class newRed21 extends IvyOpMode {
+public class pedro3test extends IvyOpMode {
 
     private static final PoseFactory POSES = PoseFactory.radians();
 
-    public newRed21() {
+    public pedro3test() {
         configurePedro(Constants::create);
     }
 
@@ -52,10 +55,10 @@ public class newRed21 extends IvyOpMode {
     private Paths paths;
 
 
-    public static double startX = 112;
-    public static double startY = 134;
+    public static double startX = 144;
+    public static double startY = 0;
 
-    public Pose start = POSES.of(startX, startY, Math.toRadians(-90));
+    public Pose start = POSES.of(startX, startY, Math.toRadians(90));
 
 
     private ServoEx servoStopper;
@@ -239,59 +242,11 @@ public class newRed21 extends IvyOpMode {
 
     public Command Auto() {
         return sequential(
+                follow(follower,paths.pedro3test,false,0.3)
 
 
 
-                waitMs((1.1) * 1000.0),
-                follow(follower, paths.shootPreloads, true, 1.0),
-                intakeMotorOn,
-                openStopper,
-                waitMs((0.2) * 1000.0),
-                closeStopper,
-                disablePreload,
-                // --- Spike 2 cycle ---
-                follow(follower, paths.intakeSpike2, true, 1.0),
-                follow(follower, paths.shootSpike2, true, 1.0),
-                waitMs((0.05) * 1000.0),
 
-                // --- Gate cycle 1 ---
-                follow(follower, paths.gateIntake1, true, 1.0),
-                waitMs((1.1) * 1000.0),
-                follow(follower, paths.gateShoot1, true, 1.0),
-                waitMs((0.05) * 1000.0),
-
-                // --- Gate cycle 2 ---
-                follow(follower, paths.gateIntake2, true, 1.0),
-                waitMs((2.25) * 1000.0),
-                follow(follower, paths.gateShoot2, true, 1.0),
-                waitMs((0.05) * 1000.0),
-
-
-                // --- Spike 1 cycle ---
-                follow(follower, paths.intakeSpike1, true, 1.0),
-                follow(follower, paths.shootSpike1, true, 1.0),
-                waitMs((0.05) * 1000.0),
-
-                // --- Gate cycle 3 ---
-                follow(follower, paths.gateIntake3, true, 1.0),
-                waitMs((1.1) * 1000.0),
-                follow(follower, paths.gateShoot3, true, 1.0),
-                waitMs((0.05) * 1000.0),
-
-                // --- Gate cycle 4 ---
-                follow(follower, paths.gateIntake4, true, 1.0),
-                waitMs((2.25) * 1000.0),
-                //follow(follower, paths.gateShoot4, true, 1.0),
-                //waitMs((0.3) * 1000.0),
-
-                // --- Gate cycle 5 ---
-//                follow(follower, paths.gateIntake5, true, 1.0),
-//                waitMs((0.3) * 1000.0),
-//                follow(follower, paths.gateShoot5, true, 1.0),
-//                waitMs((0.3) * 1000.0),
-
-                //follow(follower, paths.park, true, 1.0)
-                follow(follower, paths.lastGateWithPark, true, 1.0)
         );
     }
 
@@ -320,7 +275,7 @@ public class newRed21 extends IvyOpMode {
 
         Storage.currentPose = follower.getPose();
 
-        if (!matchStarted) return;
+        /*if (!matchStarted) return;
 
         Pose currPose = follower.getPose();
 
@@ -371,7 +326,7 @@ public class newRed21 extends IvyOpMode {
             openStopper.schedule();
         } else {
             closeStopper.schedule();
-        }
+        }*/
 
         Storage.currentPose = follower.getPose();
 
@@ -403,6 +358,7 @@ public class newRed21 extends IvyOpMode {
         public Path gateIntake4;
         public Path gateShoot4;
         public Path gateIntake5;
+        public Path pedro3test;
         public Path gateShoot5;
 
         public Path lastGateWithPark;
@@ -432,6 +388,8 @@ public class newRed21 extends IvyOpMode {
 
             shootSpike2 = line(POSES.of(123.000, 59.500, 0),
                                     GATE_SHOOT_2).linear(Math.toRadians(20), Math.toRadians(-45));
+
+            pedro3test = withCallbacks(line(start,new Pose(144,20,Math.toRadians(90))).constant(Math.toRadians(90)),poseCallback(new Pose(144,10),intakeMotorOn,1));
 
             intakeSpike1 = line(GATE_SHOOT_2,
                                     POSES.of(123.510, 83.297, 0)).tangent();

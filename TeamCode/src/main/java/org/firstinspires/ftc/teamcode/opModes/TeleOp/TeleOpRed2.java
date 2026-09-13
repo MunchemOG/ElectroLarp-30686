@@ -22,7 +22,7 @@ public class TeleOpRed2 extends IvyOpMode {
     //public MotorEx transfer;
 
     public TeleOpRed2() {
-        //configurePedro(Constants::create, DriveTrain2.INSTANCE);
+        configurePedro(Constants::create, DriveTrain2.INSTANCE);
     }
 
     public static boolean red;

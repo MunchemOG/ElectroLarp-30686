@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.pedroPathing.procedures;
 
 import com.pedropathing.math.Pose;
 import com.pedropathing.revhub.localizers.Encoder;
+import com.pedropathing.revhub.localizers.RevHubIMU;
 import com.pedropathing.revhub.localizers.TwoWheelConfig;
 import com.pedropathing.revhub.localizers.TwoWheelLocalizer;
 import com.pedropathing.tuning.autotune.Inputs;
@@ -120,7 +121,7 @@ public class TwoWheelTuner extends Procedure {
             c.strafeTicksToInches.set(strafeTicksToInches);
             c.xPodDirection.set(xPodDirection);
             c.yPodDirection.set(yPodDirection);
-            c.imuOrientation.set(new RevHubOrientationOnRobot(values.logoDirection, values.usbDirection));
+            c.imu.set(new RevHubIMU(new RevHubOrientationOnRobot(values.logoDirection, values.usbDirection)));
         });
     }
 }

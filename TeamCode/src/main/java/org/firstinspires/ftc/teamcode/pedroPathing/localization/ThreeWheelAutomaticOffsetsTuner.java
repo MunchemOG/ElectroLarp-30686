@@ -45,7 +45,7 @@ public class ThreeWheelAutomaticOffsetsTuner extends OpMode {
 
     private static class BlankIMU implements CustomIMU {
         @Override
-        public void initialize(HardwareMap hardwareMap, String hardwareMapName, RevHubOrientationOnRobot hubOrientation) {}
+        public void initialize(HardwareMap hardwareMap, String hardwareMapName) {}
 
         @Override
         public double getHeading() {
@@ -55,11 +55,6 @@ public class ThreeWheelAutomaticOffsetsTuner extends OpMode {
         @Override
         public void resetYaw() {}
     }
-
-    private final RevHubOrientationOnRobot orientation = new RevHubOrientationOnRobot(
-            RevHubOrientationOnRobot.LogoFacingDirection.UP,
-            RevHubOrientationOnRobot.UsbFacingDirection.RIGHT
-    );
 
     private TwoWheelConfig configLeft;
     private TwoWheelConfig configRight;
@@ -88,7 +83,6 @@ public class ThreeWheelAutomaticOffsetsTuner extends OpMode {
             c.yPodDirection.set(config.strafeEncoderDirection.get());
             c.imu.set(new BlankIMU());
             c.imuName.set("hi");
-            c.imuOrientation.set(orientation);
             c.xPodOffset.set(0.0);
             c.yPodOffset.set(0.0);
         });
@@ -102,11 +96,10 @@ public class ThreeWheelAutomaticOffsetsTuner extends OpMode {
             c.yPodDirection.set(config.strafeEncoderDirection.get());
             c.imu.set(new BlankIMU());
             c.imuName.set("hi");
-            c.imuOrientation.set(orientation);
             c.xPodOffset.set(0.0);
             c.yPodOffset.set(0.0);
         });
-        
+
         initLeftPod();
     }
 

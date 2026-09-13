@@ -57,5 +57,5 @@ public class TeamFollower extends Follower {
     public void setTeleOpDrive(double forward, double strafe, double turn, boolean robotCentric) {
         manual(forward, strafe, turn);
     }
-    public void setPathSpeed(double speed) { foresightConfig.setPathSpeed(speed); }
+    public void setPathSpeed(double speed) { foresightConfig.maxPathSpeed.set(speed); }
 }

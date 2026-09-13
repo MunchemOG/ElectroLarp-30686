@@ -5,8 +5,11 @@ import com.pedropathing.drivetrain.Drivetrain;
 import com.pedropathing.localization.Localizer;
 import com.pedropathing.math.Pose;
 import com.pedropathing.math.Vector2D;
+import com.pedropathing.revhub.drivetrains.Mecanum;
+import com.pedropathing.revhub.localizers.PinpointLocalizer;
 import com.pedropathing.tuning.autotune.Inputs;
 import com.pedropathing.tuning.autotune.Procedure;
+import com.pedropathing.tuning.autotune.Tuner;
 import com.pedropathing.tuning.autotune.TuningOpMode;
 import com.pedropathing.utils.Angle;
 import com.pedropathing.utils.Utils;
@@ -19,7 +22,13 @@ import java.util.function.Function;
 import static com.pedropathing.utils.Utils.linearFit;
 import static com.pedropathing.utils.Utils.quadraticFit;
 
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
 public class ForesightTuner extends Procedure {
+    @Tuner
+    public static Procedure foresightTuner() {
+        return new ForesightTuner((hardwareMap) -> new PinpointLocalizer(hardwareMap, Constants.localizerConfig), (hardwareMap) -> new Mecanum(hardwareMap, Constants.driveConfig));
+    }
     Function<HardwareMap, Localizer> localizerFunction;
     Function<HardwareMap, Drivetrain> drivetrainFunction;
 

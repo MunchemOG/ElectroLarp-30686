@@ -17,15 +17,15 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class Constants {
     public static MecanumConfig driveConfig = new MecanumConfig(
             c -> {
-                c.frontLeftName.set("lf");
-                c.backLeftName.set("lr");
-                c.frontRightName.set("rf");
-                c.backRightName.set("rr");
+                c.frontLeftName.set("frontLeft");
+                c.backLeftName.set("backLeft");
+                c.frontRightName.set("frontRight");
+                c.backRightName.set("backRight");
 
-                c.frontLeftDirection.set(DcMotorSimple.Direction.REVERSE);
-                c.backLeftDirection.set(DcMotorSimple.Direction.REVERSE);
-                c.frontRightDirection.set(DcMotorSimple.Direction.FORWARD);
-                c.backRightDirection.set(DcMotorSimple.Direction.FORWARD);
+                c.frontLeftDirection.set(DcMotorSimple.Direction.FORWARD);
+                c.backLeftDirection.set(DcMotorSimple.Direction.FORWARD);
+                c.frontRightDirection.set(DcMotorSimple.Direction.REVERSE);
+                    c.backRightDirection.set(DcMotorSimple.Direction.REVERSE);
 
                 c.manualBrakeMode.set(true);
             }
@@ -34,10 +34,10 @@ public class Constants {
     public static PinpointConfig localizerConfig = new PinpointConfig(
             c -> {
                 c.name.set("pinpoint");
-                c.xPodOffset.set(2.187);
-                c.yPodOffset.set(-4.572);
+                c.xPodOffset.set(4.742048969418984);
+                c.yPodOffset.set(-0.4026494814654974);
                 c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
-                c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+                c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
             }
     );
 
