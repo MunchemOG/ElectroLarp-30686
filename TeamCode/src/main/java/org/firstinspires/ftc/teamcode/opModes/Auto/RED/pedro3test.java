@@ -18,6 +18,7 @@ import static org.firstinspires.ftc.teamcode.subsystems.ShooterCalcAccelClaude.c
 import com.pedropathing.api.PoseFactory;
 import com.pedropathing.ivy.Command;
 import com.pedropathing.math.Pose;
+import com.pedropathing.math.Vector2D;
 import com.pedropathing.paths.Path;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -59,6 +60,9 @@ public class pedro3test extends IvyOpMode {
     public static double startY = 0;
 
     public Pose start = POSES.of(startX, startY, Math.toRadians(90));
+
+    private double maxForwardVelocity = 0;
+    private boolean maxVelocityUpdated = true;
 
 
     private ServoEx servoStopper;
@@ -242,7 +246,7 @@ public class pedro3test extends IvyOpMode {
 
     public Command Auto() {
         return sequential(
-                follow(follower,paths.pedro3test,false,0.3)
+                follow(follower,paths.pedro3test,false,1.0)
 
 
 
@@ -272,6 +276,23 @@ public class pedro3test extends IvyOpMode {
         }
 
         follower.update();
+
+        Vector2D vel = follower.velocity().toVector2D();
+        double heading = follower.getPose().heading();
+        double forwardVel = vel.x() * Math.cos(heading) + vel.y() * Math.sin(heading);
+        double speed = Math.hypot(vel.x(), vel.y());
+
+        if (forwardVel > maxForwardVelocity) {
+            maxForwardVelocity = forwardVel;
+            maxVelocityUpdated = true;
+        }
+
+        telemetry.addData("field vx", vel.x());
+        telemetry.addData("field vy", vel.y());
+        telemetry.addData("speed", speed);
+        telemetry.addData("forward velocity", forwardVel);
+        telemetry.addData("max forward velocity", maxForwardVelocity);
+        telemetry.update();
 
         Storage.currentPose = follower.getPose();
 
@@ -389,7 +410,7 @@ public class pedro3test extends IvyOpMode {
             shootSpike2 = line(POSES.of(123.000, 59.500, 0),
                                     GATE_SHOOT_2).linear(Math.toRadians(20), Math.toRadians(-45));
 
-            pedro3test = withCallbacks(line(start,new Pose(144,20,Math.toRadians(90))).constant(Math.toRadians(90)),poseCallback(new Pose(144,10),intakeMotorOn,1));
+            pedro3test = withCallbacks(line(start,new Pose(144,48,Math.toRadians(90))).constant(Math.toRadians(90)),poseCallback(new Pose(144,10),intakeMotorOn,1));
 
             intakeSpike1 = line(GATE_SHOOT_2,
                                     POSES.of(123.510, 83.297, 0)).tangent();
