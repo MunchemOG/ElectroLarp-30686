@@ -1,7 +1,10 @@
 repositories {
     mavenCentral()
-    maven { url 'https://repo.dairy.foundation/releases/'}
     google() // Needed for androidx
+    maven { url 'https://repo.dairy.foundation/releases/'}
+    maven { url = "https://repo.dairy.foundation/snapshots" }
+    maven { url = 'https://maven.brott.dev/'}
+    maven { url = "https://mymaven.bylazar.com/releases" }
 }
 
 dependencies {
@@ -14,8 +17,19 @@ dependencies {
     implementation 'org.firstinspires.ftc:Hardware:11.2.1'
     implementation 'org.firstinspires.ftc:FtcCommon:11.2.1'
     implementation 'org.firstinspires.ftc:Vision:11.2.1'
-    implementation 'androidx.appcompat:appcompat:1.2.0'
+
 
     implementation 'com.pedropathing:revhub:3.0.0'
     implementation 'com.pedropathing:tuning:1.0.0'
+    implementation 'com.pedropathing.ivy:pedro:1.1.1'
+    implementation 'com.pedropathing:telemetry:1.0.0'
+
+    implementation "dev.frozenmilk.sinister:Sloth:0.3.1"
+    implementation 'org.psilynx.psikit:core:0.2.0-beta1'
+    implementation 'org.psilynx.psikit:ftc:0.2.0-beta1'
+    implementation 'com.acmerobotics.slothboard:dashboard:0.3.1+0.6.0'
+    implementation("com.bylazar.sloth:fullpanels:0.3.1+1.0.13")
+
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+
 }
