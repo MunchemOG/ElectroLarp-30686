@@ -1,24 +1,21 @@
 repositories {
     mavenCentral()
-    maven { url 'https://central.sonatype.com/repository/maven-snapshots' }
+    maven { url 'https://repo.dairy.foundation/releases/'}
     google() // Needed for androidx
 }
 
-configurations.configureEach {
-    resolutionStrategy.cacheChangingModulesFor 5, 'minutes'
-}
-
 dependencies {
-    implementation 'org.firstinspires.ftc:Inspection:11.2.0'
-    implementation 'org.firstinspires.ftc:Blocks:11.2.0'
-    implementation 'org.firstinspires.ftc:RobotCore:11.2.0'
-    implementation 'org.firstinspires.ftc:RobotServer:11.2.0'
-    implementation 'org.firstinspires.ftc:OnBotJava:11.2.0'
-    implementation 'org.firstinspires.ftc:Hardware:11.2.0'
-    implementation 'org.firstinspires.ftc:FtcCommon:11.2.0'
-    implementation 'org.firstinspires.ftc:Vision:11.2.0'
+    implementation 'org.firstinspires.ftc:Inspection:11.2.1'
+    implementation 'org.firstinspires.ftc:Blocks:11.2.1'
+    //noinspection Aligned16KB
+    implementation 'org.firstinspires.ftc:RobotCore:11.2.1'
+    implementation 'org.firstinspires.ftc:RobotServer:11.2.1'
+    implementation 'org.firstinspires.ftc:OnBotJava:11.2.1'
+    implementation 'org.firstinspires.ftc:Hardware:11.2.1'
+    implementation 'org.firstinspires.ftc:FtcCommon:11.2.1'
+    implementation 'org.firstinspires.ftc:Vision:11.2.1'
     implementation 'androidx.appcompat:appcompat:1.2.0'
 
-    implementation 'com.pedropathing:revhub:3.0.0-SNAPSHOT'
+    implementation 'com.pedropathing:revhub:3.0.0'
+    implementation 'com.pedropathing:tuning:1.0.0'
 }
-
